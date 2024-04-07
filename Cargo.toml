@@ -1,0 +1,12 @@
+[package]
+name = "hala-gfx"
+version = "0.1.0"
+edition = "2021"
+description = "A simple graphics library for Vulkan based on ash."
+
+[dependencies]
+thiserror = "1"
+log = "0"
+ash = "0"
+gpu-allocator = {git = "https://github.com/Traverse-Research/gpu-allocator.git", branch = "ash-0.38", default-features = false, features = ["vulkan"]}
+winit = {version = "0.29", default-features = false, features = ["rwh_06", "x11", "wayland", "wayland-dlopen"]}
