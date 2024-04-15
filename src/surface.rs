@@ -168,7 +168,7 @@ impl HalaSurface {
         RawDisplayHandle::Xlib(xlib_rdh)
       ) => {
         let create_info = XlibSurfaceCreateInfoKHR::default()
-          .dpy(xlib_rdh.display.unwrap().as_ptr() as *mut *const std::ffi::c_void)
+          .dpy(xlib_rdh.display.unwrap().as_ptr() as *mut std::ffi::c_void)
           .window(xlib_rwh.window);
         unsafe {
           platform_surface_loader.create_xlib_surface(&create_info, None)
