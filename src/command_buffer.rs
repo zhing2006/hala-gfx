@@ -117,6 +117,8 @@ pub struct HalaCommandBufferSet {
   pub(crate) command_pools: Rc<RefCell<HalaCommandPools>>,
   pub raw: Vec<vk::CommandBuffer>,
   pub command_buffer_type: HalaCommandBufferType,
+
+  pub(crate) debug_name: String,
 }
 
 /// The Drop trait implementation of the command buffer set.
@@ -132,7 +134,7 @@ impl Drop for HalaCommandBufferSet {
         _ => (),
       }
     }
-    log::debug!("A HalaCommandBufferSet[{:?}] with {} buffer(s) is dropped.", self.command_buffer_type, self.raw.len());
+    log::debug!("A HalaCommandBufferSet[{:?}] \"{}\" with {} buffer(s) is dropped.", self.command_buffer_type, self.debug_name, self.raw.len());
   }
 }
 
@@ -179,12 +181,13 @@ impl HalaCommandBufferSet {
       ).map_err(|err| HalaGfxError::new("Failed to set debug name for the command buffer.", Some(Box::new(err))))?;
     }
 
-    log::debug!("A HalaCommandBufferSet[{:?}] with {} buffer(s) is created.", buffer_type, count);
+    log::debug!("A HalaCommandBufferSet[{:?}] \"{}\" with {} buffer(s) is created.", buffer_type, debug_name, count);
     let command_buffer_set = Self {
       logical_device,
       command_pools,
       raw: command_buffers,
       command_buffer_type: buffer_type,
+      debug_name: debug_name.to_string(),
     };
     Ok(command_buffer_set)
   }
