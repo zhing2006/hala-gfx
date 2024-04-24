@@ -73,7 +73,7 @@ impl Drop for HalaImage {
 
 /// The implementation of the image.
 impl HalaImage {
-  /// Create a 2D image.
+  /// Create a 2D image with dedicated memory.
   /// param logical_device: The logical device.
   /// param usage: The image usage flags.
   /// param format: The image format.
@@ -96,6 +96,82 @@ impl HalaImage {
     memory_location: HalaMemoryLocation,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      memory_location,
+      false,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D image with managed memory.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn new_2d_managed(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      memory_location,
+      true,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D image.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param memory_location: The memory location.
+  /// param use_managed_memory: Whether to use managed memory.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  fn new_2d_impl(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    memory_location: HalaMemoryLocation,
+    use_managed_memory: bool,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
     let image_info = vk::ImageCreateInfo::default()
       .image_type(vk::ImageType::TYPE_2D)
       .format(format.into())
@@ -116,6 +192,7 @@ impl HalaImage {
       &logical_device,
       image_info,
       memory_location,
+      use_managed_memory,
       debug_name,
     )?;
 
@@ -147,7 +224,7 @@ impl HalaImage {
     })
   }
 
-  /// Create a 3D image.
+  /// Create a 3D image with dedicated memory.
   /// param logical_device: The logical device.
   /// param usage: The image usage flags.
   /// param format: The image format.
@@ -166,6 +243,76 @@ impl HalaImage {
     height: u32,
     depth: u32,
     memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Ok(Self::new_3d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      depth,
+      memory_location,
+      false,
+      debug_name,
+    )?)
+  }
+
+  /// Create a 3D image with managed memory.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param depth: The image depth.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn new_3d_managed(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    depth: u32,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Ok(Self::new_3d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      depth,
+      memory_location,
+      true,
+      debug_name,
+    )?)
+  }
+
+  /// Create a 3D image.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param depth: The image depth.
+  /// param memory_location: The memory location.
+  /// param use_managed_memory: Whether to use managed memory.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  fn new_3d_impl(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    depth: u32,
+    memory_location: HalaMemoryLocation,
+    use_managed_memory: bool,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
     let image_info = vk::ImageCreateInfo::default()
@@ -188,6 +335,7 @@ impl HalaImage {
       &logical_device,
       image_info,
       memory_location,
+      use_managed_memory,
       debug_name,
     )?;
 
@@ -223,12 +371,14 @@ impl HalaImage {
   /// param logical_device: The logical device.
   /// param image_info: The image create info.
   /// param memory_location: The memory location.
+  /// param use_managed_memory: Whether to use managed memory.
   /// param debug_name: The debug name.
   /// return: The result(image, memory requirements, allocation).
   fn create_and_allocate(
     logical_device: &std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
     image_info: vk::ImageCreateInfo<'_>,
     memory_location: HalaMemoryLocation,
+    use_managed_memory: bool,
     debug_name: &str,
   ) -> Result<(vk::Image, vk::MemoryRequirements, gpu_allocator::vulkan::Allocation), HalaGfxError> {
     let (image,memory_requirements) = unsafe {
@@ -249,7 +399,7 @@ impl HalaImage {
           requirements: memory_requirements,
           location: memory_location.into(),
           linear: true,
-          allocation_scheme: gpu_allocator::vulkan::AllocationScheme::GpuAllocatorManaged,
+          allocation_scheme: if use_managed_memory { gpu_allocator::vulkan::AllocationScheme::GpuAllocatorManaged } else { gpu_allocator::vulkan::AllocationScheme::DedicatedImage(image) },
         }
       ).map_err(|err| HalaGfxError::new("Failed to allocate image.", Some(Box::new(err))))?;
     unsafe {

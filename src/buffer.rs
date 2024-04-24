@@ -72,7 +72,7 @@ impl Drop for HalaBuffer {
 
 /// The buffer implementation.
 impl HalaBuffer {
-  /// Create a buffer.
+  /// Create a buffer with dedicated memory.
   /// param logical_device: The logical device.
   /// param size: The size of the buffer.
   /// param usage_flags: The usage flags of the buffer.
@@ -84,6 +84,42 @@ impl HalaBuffer {
     size: u64,
     usage_flags: HalaBufferUsageFlags,
     memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_impl(logical_device, size, usage_flags, memory_location, false, debug_name)
+  }
+
+  /// Create a buffer with managed memory.
+  /// param logical_device: The logical device.
+  /// param size: The size of the buffer.
+  /// param usage_flags: The usage flags of the buffer.
+  /// param memory_location: The memory location of the buffer.
+  /// param debug_name: The debug name of the buffer.
+  /// return: The result.
+  pub fn new_managed(
+    logical_device: Rc<RefCell<HalaLogicalDevice>>,
+    size: u64,
+    usage_flags: HalaBufferUsageFlags,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_impl(logical_device, size, usage_flags, memory_location, true, debug_name)
+  }
+
+  /// Create a buffer.
+  /// param logical_device: The logical device.
+  /// param size: The size of the buffer.
+  /// param usage_flags: The usage flags of the buffer.
+  /// param memory_location: The memory location of the buffer.
+  /// param use_managed_memory: Whether to use managed memory.
+  /// param debug_name: The debug name of the buffer.
+  /// return: The result.
+  fn new_impl(
+    logical_device: Rc<RefCell<HalaLogicalDevice>>,
+    size: u64,
+    usage_flags: HalaBufferUsageFlags,
+    memory_location: HalaMemoryLocation,
+    use_managed_memory: bool,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
     let buffer_info = vk::BufferCreateInfo::default()
@@ -106,7 +142,7 @@ impl HalaBuffer {
           requirements: memory_requirements,
           location: memory_location.into(),
           linear: true,
-          allocation_scheme: gpu_allocator::vulkan::AllocationScheme::GpuAllocatorManaged,
+          allocation_scheme: if use_managed_memory { gpu_allocator::vulkan::AllocationScheme::GpuAllocatorManaged } else { gpu_allocator::vulkan::AllocationScheme::DedicatedBuffer(raw) },
         }
       ).map_err(|err| HalaGfxError::new("Failed to allocate buffer.", Some(Box::new(err))))?;
     unsafe {
