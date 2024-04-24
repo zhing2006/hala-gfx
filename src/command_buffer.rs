@@ -787,7 +787,14 @@ impl HalaCommandBufferSet {
     where DS: AsRef<crate::HalaDescriptorSet>
   {
     let logical_device = self.logical_device.borrow();
-    let descriptor_sets: Vec<vk::DescriptorSet> = descriptor_sets.iter().map(|set| set.as_ref().raw[index]).collect();
+    let descriptor_sets: Vec<vk::DescriptorSet> = descriptor_sets.iter().map(|set| {
+      let set = set.as_ref();
+      if set.is_static {
+        set.raw[0]
+      } else {
+        set.raw[index]
+      }
+    }).collect();
     unsafe {
       logical_device.raw.cmd_bind_descriptor_sets(
         self.raw[index],
@@ -854,7 +861,14 @@ impl HalaCommandBufferSet {
     where DS: AsRef<crate::HalaDescriptorSet>
   {
     let logical_device = self.logical_device.borrow();
-    let descriptor_sets: Vec<vk::DescriptorSet> = descriptor_sets.iter().map(|set| set.as_ref().raw[index]).collect();
+    let descriptor_sets: Vec<vk::DescriptorSet> = descriptor_sets.iter().map(|set| {
+      let set = set.as_ref();
+      if set.is_static {
+        set.raw[0]
+      } else {
+        set.raw[index]
+      }
+    }).collect();
     unsafe {
       logical_device.raw.cmd_bind_descriptor_sets(
         self.raw[index],
