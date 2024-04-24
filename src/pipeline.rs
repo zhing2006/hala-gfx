@@ -582,7 +582,7 @@ impl Drop for HalaGraphicsPipeline {
 /// return: The graphics pipeline.
 #[allow(clippy::too_many_arguments)]
 impl HalaGraphicsPipeline {
-  pub fn new<DSL, VIAD, VIBD, PCR>(
+  pub fn new<DSL, VIAD, VIBD, PCR, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     swapchain: &HalaSwapchain,
     descriptor_set_layouts: &[DSL],
@@ -594,14 +594,15 @@ impl HalaGraphicsPipeline {
     alpha_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
     rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
     depth_info: (bool, bool, HalaCompareOp),
-    shaders: &[HalaShader],
+    shaders: &[S],
     pipeline_cache: Option<&HalaPipelineCache>,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError>
     where DSL: AsRef<HalaDescriptorSetLayout>,
           VIAD: AsRef<HalaVertexInputAttributeDescription>,
           VIBD: AsRef<HalaVertexInputBindingDescription>,
-          PCR: AsRef<HalaPushConstantRange>
+          PCR: AsRef<HalaPushConstantRange>,
+          S: AsRef<HalaShader>,
   {
     let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
       &logical_device,
