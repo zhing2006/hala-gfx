@@ -752,7 +752,7 @@ impl HalaGraphicsPipeline {
       rendering_info
     };
 
-    // let mut dynamic_states = vec![vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
+    let dynamic_states = vec![vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
     // if swapchain.depth_stencil_format != vk::Format::UNDEFINED {
     //   dynamic_states.push(vk::DynamicState::DEPTH_BIAS);
     //   dynamic_states.push(vk::DynamicState::DEPTH_BIAS_ENABLE);
@@ -767,8 +767,8 @@ impl HalaGraphicsPipeline {
     //   dynamic_states.push(vk::DynamicState::STENCIL_COMPARE_MASK);
     //   dynamic_states.push(vk::DynamicState::STENCIL_REFERENCE);
     // }
-    // let dynamic_state_info = vk::PipelineDynamicStateCreateInfo::default()
-    //   .dynamic_states(dynamic_states.as_slice());
+    let dynamic_state_info = vk::PipelineDynamicStateCreateInfo::default()
+      .dynamic_states(dynamic_states.as_slice());
 
     let pipeline_info = vk::GraphicsPipelineCreateInfo::default()
       .stages(shader_stage_infos.as_slice())
@@ -778,7 +778,7 @@ impl HalaGraphicsPipeline {
       .rasterization_state(&rasterizer_info)
       .multisample_state(&multisampler_info)
       .color_blend_state(&colourblend_info)
-      // .dynamic_state(&dynamic_state_info)
+      .dynamic_state(&dynamic_state_info)
       .layout(pipeline_layout)
       // .render_pass(renderpass.raw)
       .push_next(&mut rendering_info)
