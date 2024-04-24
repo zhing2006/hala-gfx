@@ -341,7 +341,6 @@ impl HalaContext {
         ..Default::default()
       }],
     );
-    // command_buffers.end_render_pass(index);
 
     command_buffers.write_timestamp(
       index,
