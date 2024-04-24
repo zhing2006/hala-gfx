@@ -172,27 +172,29 @@ impl HalaBuffer {
   }
 
   /// Upload data to the buffer.
+  /// param offset: The offset in the buffer.
   /// param data: The data to be uploaded.
   /// return: The result.
-  pub fn update_memory<T: Copy>(&self, data: &[T]) -> Result<(), HalaGfxError> {
+  pub fn update_memory<T: Copy>(&self, offset: usize, data: &[T]) -> Result<(), HalaGfxError> {
     let src = data.as_ptr() as *const u8;
     let src_size = std::mem::size_of_val(data);
-    self.update_memory_raw(src, src_size)?;
+    self.update_memory_raw(offset, src, src_size)?;
 
     Ok(())
   }
 
   /// Upload raw data to the buffer.
+  /// param offset: The offset in the buffer.
   /// param data: The data to be uploaded.
   /// param size: The size of the data.
   /// return: The result.
-  pub fn update_memory_raw(&self, data: *const u8, size: usize) -> Result<(), HalaGfxError> {
+  pub fn update_memory_raw(&self, offset: usize, data: *const u8, size: usize) -> Result<(), HalaGfxError> {
     if self.memory_location != gpu_allocator::MemoryLocation::GpuOnly {
       let src = data;
       let src_bytes = size;
       let dst = self.allocation.mapped_ptr().unwrap().as_ptr() as *mut u8;
       let dst_bytes = self.size as usize;
-      unsafe { std::ptr::copy_nonoverlapping(src, dst, std::cmp::min(src_bytes, dst_bytes)) };
+      unsafe { std::ptr::copy_nonoverlapping(src, dst.add(offset), std::cmp::min(src_bytes, dst_bytes)) };
     } else {
       return Err(HalaGfxError::new("Cannot update memory of a GPU only buffer.", None));
     }
@@ -201,27 +203,29 @@ impl HalaBuffer {
   }
 
   /// Download data from the buffer.
+  /// param offset: The offset in the buffer.
   /// param data: The data to be downloaded.
   /// return: The result.
-  pub fn download_memory<T: Copy>(&self, data: &mut [T]) -> Result<(), HalaGfxError> {
+  pub fn download_memory<T: Copy>(&self, offset: usize, data: &mut [T]) -> Result<(), HalaGfxError> {
     let dst = data.as_mut_ptr() as *mut u8;
     let dst_size = std::mem::size_of_val(data);
-    self.download_memory_raw(dst, dst_size)?;
+    self.download_memory_raw(offset, dst, dst_size)?;
 
     Ok(())
   }
 
   /// Download raw data from the buffer.
+  /// param offset: The offset in the buffer.
   /// param data: The data to be downloaded.
   /// param size: The size of the data.
   /// return: The result.
-  pub fn download_memory_raw(&self, data: *mut u8, size: usize) -> Result<(), HalaGfxError> {
+  pub fn download_memory_raw(&self, offset: usize, data: *mut u8, size: usize) -> Result<(), HalaGfxError> {
     if self.memory_location != gpu_allocator::MemoryLocation::GpuOnly {
       let src = self.allocation.mapped_ptr().unwrap().as_ptr() as *const u8;
       let src_bytes = self.size as usize;
       let dst = data;
       let dst_bytes = size;
-      unsafe { std::ptr::copy_nonoverlapping(src, dst, std::cmp::min(src_bytes, dst_bytes)) };
+      unsafe { std::ptr::copy_nonoverlapping(src.add(offset), dst, std::cmp::min(src_bytes, dst_bytes)) };
     } else {
       return Err(HalaGfxError::new("Cannot download memory of a GPU only buffer.", None));
     }
