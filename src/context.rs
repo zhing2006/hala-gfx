@@ -144,6 +144,7 @@ impl HalaContext {
   }
 
   /// Get GPU frame time.
+  /// return: The GPU frame time.
   pub fn get_gpu_frame_time(&self) -> Result<Duration, HalaGfxError> {
     let result = self.timestamp_query_pool.wait(0)?;
     let time = Duration::from_nanos(
@@ -153,6 +154,9 @@ impl HalaContext {
   }
 
   /// Reset the swapchain.
+  /// param width: The width of the swapchain.
+  /// param height: The height of the swapchain.
+  /// return: The result.
   pub fn reset_swapchain(&mut self, width: u32, height: u32) -> Result<(), HalaGfxError> {
     self.logical_device.borrow().wait_idle()?;
 
