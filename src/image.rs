@@ -352,79 +352,89 @@ impl HalaImage {
 
       unsafe {
         let logical_device = self.logical_device.borrow();
-        logical_device.transfer_execute_and_submit(command_buffers, 0, |logical_device, command_buffers, index| {
-          let input_barrier = vk::ImageMemoryBarrier2::default()
-            .src_stage_mask(vk::PipelineStageFlags2::NONE)
-            .src_access_mask(vk::AccessFlags2::NONE)
-            .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
-            .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
-            .old_layout(vk::ImageLayout::UNDEFINED)
-            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .image(self.raw)
-            .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-            .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-            .subresource_range(
-              vk::ImageSubresourceRange::default()
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .base_mip_level(0)
-                .level_count(1)
-                .base_array_layer(0)
-                .layer_count(1)
+        let queue = match command_buffers.command_buffer_type {
+          crate::HalaCommandBufferType::GRAPHICS => logical_device.get_graphics_queue(0),
+          crate::HalaCommandBufferType::TRANSFER => logical_device.get_transfer_queue(0),
+          crate::HalaCommandBufferType::COMPUTE => logical_device.get_compute_queue(0),
+          _ => logical_device.get_graphics_queue(0),
+        };
+        logical_device.execute_and_submit(
+          command_buffers,
+          0,
+          |logical_device, command_buffers, index| {
+            let input_barrier = vk::ImageMemoryBarrier2::default()
+              .src_stage_mask(vk::PipelineStageFlags2::NONE)
+              .src_access_mask(vk::AccessFlags2::NONE)
+              .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+              .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+              .old_layout(vk::ImageLayout::UNDEFINED)
+              .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+              .image(self.raw)
+              .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+              .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+              .subresource_range(
+                vk::ImageSubresourceRange::default()
+                  .aspect_mask(vk::ImageAspectFlags::COLOR)
+                  .base_mip_level(0)
+                  .level_count(1)
+                  .base_array_layer(0)
+                  .layer_count(1)
+              );
+
+            let dependency_info = vk::DependencyInfoKHR::default()
+              .image_memory_barriers(std::slice::from_ref(&input_barrier));
+            logical_device.raw.cmd_pipeline_barrier2(
+              command_buffers.raw[index],
+              &dependency_info,
             );
 
-          let dependency_info = vk::DependencyInfoKHR::default()
-            .image_memory_barriers(std::slice::from_ref(&input_barrier));
-          logical_device.raw.cmd_pipeline_barrier2(
-            command_buffers.raw[index],
-            &dependency_info,
-          );
-
-          let region = vk::BufferImageCopy2::default()
-            .image_subresource(vk::ImageSubresourceLayers::default()
-              .aspect_mask(vk::ImageAspectFlags::COLOR)
-              .mip_level(0)
-              .base_array_layer(0)
-              .layer_count(1)
-            )
-            .image_extent(self.extent);
-          let copy_buffer_to_image_info = vk::CopyBufferToImageInfo2::default()
-            .src_buffer(staging_buffer.raw)
-            .dst_image(self.raw)
-            .dst_image_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .regions(std::slice::from_ref(&region));
-
-          logical_device.raw.cmd_copy_buffer_to_image2(
-            command_buffers.raw[index],
-            &copy_buffer_to_image_info,
-          );
-
-          let output_barrier = vk::ImageMemoryBarrier2::default()
-            .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
-            .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
-            .dst_stage_mask(dst_stage_mask.into())
-            .dst_access_mask(vk::AccessFlags2::SHADER_READ)
-            .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-            .image(self.raw)
-            .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-            .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
-            .subresource_range(
-              vk::ImageSubresourceRange::default()
+            let region = vk::BufferImageCopy2::default()
+              .image_subresource(vk::ImageSubresourceLayers::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .base_mip_level(0)
-                .level_count(1)
+                .mip_level(0)
                 .base_array_layer(0)
                 .layer_count(1)
+              )
+              .image_extent(self.extent);
+            let copy_buffer_to_image_info = vk::CopyBufferToImageInfo2::default()
+              .src_buffer(staging_buffer.raw)
+              .dst_image(self.raw)
+              .dst_image_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+              .regions(std::slice::from_ref(&region));
+
+            logical_device.raw.cmd_copy_buffer_to_image2(
+              command_buffers.raw[index],
+              &copy_buffer_to_image_info,
             );
 
-          let dependency_info = vk::DependencyInfoKHR::default()
-            .image_memory_barriers(std::slice::from_ref(&output_barrier));
-          logical_device.raw.cmd_pipeline_barrier2(
-            command_buffers.raw[index],
-            &dependency_info,
-          );
-        },
-        0)?;
+            let output_barrier = vk::ImageMemoryBarrier2::default()
+              .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+              .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+              .dst_stage_mask(dst_stage_mask.into())
+              .dst_access_mask(vk::AccessFlags2::SHADER_READ)
+              .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+              .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+              .image(self.raw)
+              .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+              .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+              .subresource_range(
+                vk::ImageSubresourceRange::default()
+                  .aspect_mask(vk::ImageAspectFlags::COLOR)
+                  .base_mip_level(0)
+                  .level_count(1)
+                  .base_array_layer(0)
+                  .layer_count(1)
+              );
+
+            let dependency_info = vk::DependencyInfoKHR::default()
+              .image_memory_barriers(std::slice::from_ref(&output_barrier));
+            logical_device.raw.cmd_pipeline_barrier2(
+              command_buffers.raw[index],
+              &dependency_info,
+            );
+          },
+          queue,
+        )?;
       }
     } else {
       return Err(HalaGfxError::new("Cannot update GPU memory of a non GPU only buffer.", None));

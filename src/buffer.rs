@@ -4,10 +4,7 @@ use std::cell::RefCell;
 use ash::vk;
 
 use crate::{
-  HalaGfxError,
-  HalaMemoryLocation,
-  HalaLogicalDevice,
-  HalaCommandBufferSet,
+  HalaCommandBufferSet, HalaCommandBufferType, HalaGfxError, HalaLogicalDevice, HalaMemoryLocation
 };
 
 /// The buffer usage flags.
@@ -239,14 +236,20 @@ impl HalaBuffer {
 
       unsafe {
         let logical_device = self.logical_device.borrow();
-        logical_device.transfer_execute_and_submit(command_buffers, 0, |logical_device, command_buffers, index| {
+        let queue = match command_buffers.command_buffer_type {
+          HalaCommandBufferType::GRAPHICS => logical_device.get_graphics_queue(0),
+          HalaCommandBufferType::TRANSFER => logical_device.get_transfer_queue(0),
+          HalaCommandBufferType::COMPUTE => logical_device.get_compute_queue(0),
+          _ => return Err(HalaGfxError::new("Invalid command buffer type.", None)),
+        };
+        logical_device.execute_and_submit(command_buffers, 0, |logical_device, command_buffers, index| {
           let copy_regions = [vk::BufferCopy::default()
             .src_offset(0)
             .dst_offset(0)
             .size(self.size)];
           logical_device.raw.cmd_copy_buffer(command_buffers.raw[index], staging_buffer.raw, self.raw, &copy_regions);
         },
-        0)?;
+        queue)?;
       }
     } else {
       return Err(HalaGfxError::new("Cannot update GPU memory of a non GPU only buffer.", None));

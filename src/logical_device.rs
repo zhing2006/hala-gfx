@@ -258,7 +258,7 @@ impl HalaLogicalDevice {
   /// param index: The buffer index.
   /// param recording_fn: The recording function.
   /// return: The result.
-  fn execute_and_submit<F: FnOnce(&HalaLogicalDevice, &HalaCommandBufferSet, usize)>(
+  pub fn execute_and_submit<F: FnOnce(&HalaLogicalDevice, &HalaCommandBufferSet, usize)>(
     &self,
     command_buffers: &HalaCommandBufferSet,
     index: usize,

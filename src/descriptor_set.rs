@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use ash::vk;
+use ash::vk::{self, Handle};
 
 use crate::{
   HalaGfxError,
@@ -215,6 +215,13 @@ impl HalaDescriptorSet {
       is_static: false,
       debug_name: debug_name.to_string(),
     })
+  }
+
+  /// Get the handle of the descriptor set.
+  /// param index: The index.
+  /// return: The handle.
+  pub fn handle(&self, index: usize) -> u64 {
+    self.raw[index].as_raw()
   }
 
   /// Create a new static descriptor set.
