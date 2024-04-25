@@ -306,22 +306,28 @@ impl HalaSwapchain {
         found_format
       }
     } else {
+      let first_pass_fmt = [vk::Format::R8G8B8A8_UINT, vk::Format::R8G8B8A8_UNORM, vk::Format::R8G8B8A8_SINT, vk::Format::R8G8B8A8_SNORM];
+      let second_pass_fmt = [vk::Format::B8G8R8A8_UINT, vk::Format::B8G8R8A8_UNORM, vk::Format::B8G8R8A8_SINT, vk::Format::B8G8R8A8_SNORM];
       let mut found = false;
       let mut found_format = vk::Format::UNDEFINED;
       for format in surface_formats.iter() {
-        if (format.format == vk::Format::B8G8R8A8_UINT ||
-            format.format == vk::Format::B8G8R8A8_UNORM ||
-            format.format == vk::Format::B8G8R8A8_SINT ||
-            format.format == vk::Format::B8G8R8A8_SNORM ||
-            format.format == vk::Format::R8G8B8A8_UINT ||
-            format.format == vk::Format::R8G8B8A8_UNORM ||
-            format.format == vk::Format::R8G8B8A8_SINT ||
-            format.format == vk::Format::R8G8B8A8_SNORM)
+        if first_pass_fmt.contains(&format.format)
           && format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
         {
           found = true;
           found_format = format.format;
           break;
+        }
+      }
+      if !found {
+        for format in surface_formats.iter() {
+          if second_pass_fmt.contains(&format.format)
+            && format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
+          {
+            found = true;
+            found_format = format.format;
+            break;
+          }
         }
       }
       if !found {
