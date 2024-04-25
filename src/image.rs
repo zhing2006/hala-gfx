@@ -245,7 +245,7 @@ impl HalaImage {
     memory_location: HalaMemoryLocation,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
-    Ok(Self::new_3d_impl(
+    Self::new_3d_impl(
       logical_device,
       usage,
       format,
@@ -255,7 +255,7 @@ impl HalaImage {
       memory_location,
       false,
       debug_name,
-    )?)
+    )
   }
 
   /// Create a 3D image with managed memory.
@@ -279,7 +279,7 @@ impl HalaImage {
     memory_location: HalaMemoryLocation,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
-    Ok(Self::new_3d_impl(
+    Self::new_3d_impl(
       logical_device,
       usage,
       format,
@@ -289,7 +289,7 @@ impl HalaImage {
       memory_location,
       true,
       debug_name,
-    )?)
+    )
   }
 
   /// Create a 3D image.

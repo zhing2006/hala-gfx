@@ -35,6 +35,7 @@ pub use crate::pipeline::{
   HalaVertexInputAttributeDescription,
   HalaVertexInputBindingDescription,
   HalaPushConstantRange,
+  HalaDynamicState,
   HalaGraphicsPipeline,
   HalaRayTracingPipeline,
   HalaComputePipeline,
