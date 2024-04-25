@@ -562,7 +562,7 @@ impl HalaCommandBufferSet {
   ) {
     let logical_device = self.logical_device.borrow();
     unsafe {
-      let data = std::slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * std::mem::size_of::<f32>());
+      let data = std::slice::from_raw_parts(data.as_ptr() as *const u8, std::mem::size_of_val(data));
       logical_device.raw.cmd_push_constants(
         self.raw[index],
         pipeline.layout,
