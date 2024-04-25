@@ -498,6 +498,54 @@ impl std::convert::From<&HalaPushConstantRange> for vk::PushConstantRange {
   }
 }
 
+/// The dynamic state.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct HalaDynamicState(i32);
+impl HalaDynamicState {
+  pub const VIEWPORT: Self = Self(vk::DynamicState::VIEWPORT.as_raw());
+  pub const SCISSOR: Self = Self(vk::DynamicState::SCISSOR.as_raw());
+  pub const LINE_WIDTH: Self = Self(vk::DynamicState::LINE_WIDTH.as_raw());
+  pub const DEPTH_BIAS: Self = Self(vk::DynamicState::DEPTH_BIAS.as_raw());
+  pub const BLEND_CONSTANTS: Self = Self(vk::DynamicState::BLEND_CONSTANTS.as_raw());
+  pub const DEPTH_BOUNDS: Self = Self(vk::DynamicState::DEPTH_BOUNDS.as_raw());
+  pub const STENCIL_COMPARE_MASK: Self = Self(vk::DynamicState::STENCIL_COMPARE_MASK.as_raw());
+  pub const STENCIL_WRITE_MASK: Self = Self(vk::DynamicState::STENCIL_WRITE_MASK.as_raw());
+  pub const STENCIL_REFERENCE: Self = Self(vk::DynamicState::STENCIL_REFERENCE.as_raw());
+  pub const VIEWPORT_W_SCALING_NV: Self = Self(vk::DynamicState::VIEWPORT_W_SCALING_NV.as_raw());
+  pub const DISCARD_RECTANGLE_EXT: Self = Self(vk::DynamicState::DISCARD_RECTANGLE_EXT.as_raw());
+  pub const SAMPLE_LOCATIONS_EXT: Self = Self(vk::DynamicState::SAMPLE_LOCATIONS_EXT.as_raw());
+  pub const RAY_TRACING_PIPELINE_STACK_SIZE_KHR: Self = Self(vk::DynamicState::RAY_TRACING_PIPELINE_STACK_SIZE_KHR.as_raw());
+  pub const VIEWPORT_SHADING_RATE_PALETTE_NV: Self = Self(vk::DynamicState::VIEWPORT_SHADING_RATE_PALETTE_NV.as_raw());
+  pub const VIEWPORT_COARSE_SAMPLE_ORDER_NV: Self = Self(vk::DynamicState::VIEWPORT_COARSE_SAMPLE_ORDER_NV.as_raw());
+  pub const EXCLUSIVE_SCISSOR_NV: Self = Self(vk::DynamicState::EXCLUSIVE_SCISSOR_NV.as_raw());
+  pub const FRAGMENT_SHADING_RATE_KHR: Self = Self(vk::DynamicState::FRAGMENT_SHADING_RATE_KHR.as_raw());
+  pub const LINE_STIPPLE_EXT: Self = Self(vk::DynamicState::LINE_STIPPLE_EXT.as_raw());
+  pub const CULL_MODE_EXT: Self = Self(vk::DynamicState::CULL_MODE_EXT.as_raw());
+  pub const FRONT_FACE_EXT: Self = Self(vk::DynamicState::FRONT_FACE_EXT.as_raw());
+  pub const PRIMITIVE_TOPOLOGY_EXT: Self = Self(vk::DynamicState::PRIMITIVE_TOPOLOGY_EXT.as_raw());
+  pub const VIEWPORT_WITH_COUNT_EXT: Self = Self(vk::DynamicState::VIEWPORT_WITH_COUNT_EXT.as_raw());
+  pub const SCISSOR_WITH_COUNT_EXT: Self = Self(vk::DynamicState::SCISSOR_WITH_COUNT_EXT.as_raw());
+  pub const VERTEX_INPUT_BINDING_STRIDE_EXT: Self = Self(vk::DynamicState::VERTEX_INPUT_BINDING_STRIDE_EXT.as_raw());
+  pub const DEPTH_TEST_ENABLE_EXT: Self = Self(vk::DynamicState::DEPTH_TEST_ENABLE_EXT.as_raw());
+  pub const DEPTH_WRITE_ENABLE_EXT: Self = Self(vk::DynamicState::DEPTH_WRITE_ENABLE_EXT.as_raw());
+  pub const DEPTH_COMPARE_OP_EXT: Self = Self(vk::DynamicState::DEPTH_COMPARE_OP_EXT.as_raw());
+  pub const DEPTH_BOUNDS_TEST_ENABLE_EXT: Self = Self(vk::DynamicState::DEPTH_BOUNDS_TEST_ENABLE_EXT.as_raw());
+  pub const STENCIL_TEST_ENABLE_EXT: Self = Self(vk::DynamicState::STENCIL_TEST_ENABLE_EXT.as_raw());
+  pub const STENCIL_OP_EXT: Self = Self(vk::DynamicState::STENCIL_OP_EXT.as_raw());
+}
+
+impl std::convert::From<vk::DynamicState> for HalaDynamicState {
+  fn from(val: vk::DynamicState) -> Self {
+    Self(val.as_raw())
+  }
+}
+
+impl std::convert::From<HalaDynamicState> for vk::DynamicState {
+  fn from(val: HalaDynamicState) -> Self {
+    vk::DynamicState::from_raw(val.0)
+  }
+}
+
 /// The pipeline base.
 pub(crate) struct HalaPipelineBase;
 impl HalaPipelineBase {
@@ -576,7 +624,7 @@ impl Drop for HalaGraphicsPipeline {
 /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
 /// param depth_info: The depth info(test enable, write enable, compare operation).
 /// param shaders: The shaders.
-/// param renderpass: The renderpass.
+/// param dynamic_states: The dynamic states.
 /// param pipeline_cache: The pipeline cache.
 /// param debug_name: The debug name.
 /// return: The graphics pipeline.
@@ -595,6 +643,7 @@ impl HalaGraphicsPipeline {
     rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
     depth_info: (bool, bool, HalaCompareOp),
     shaders: &[S],
+    dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError>
@@ -622,6 +671,7 @@ impl HalaGraphicsPipeline {
       rasterizer_info,
       depth_info,
       shaders,
+      dynamic_states,
       pipeline_cache,
       pipeline_layout,
       debug_name
@@ -649,7 +699,7 @@ impl HalaGraphicsPipeline {
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param shaders: The shaders.
-  /// param renderpass: The renderpass.
+  /// param dynamic_states: The dynamic states.
   /// param pipeline_cache: The pipeline cache.
   /// param pipeline_layout: The pipeline layout.
   /// param debug_name: The debug name.
@@ -665,6 +715,7 @@ impl HalaGraphicsPipeline {
     rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
     depth_info: (bool, bool, HalaCompareOp),
     shaders: &[S],
+    dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
     debug_name: &str,
@@ -752,21 +803,10 @@ impl HalaGraphicsPipeline {
       rendering_info
     };
 
-    let dynamic_states = vec![vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-    // if swapchain.depth_stencil_format != vk::Format::UNDEFINED {
-    //   dynamic_states.push(vk::DynamicState::DEPTH_BIAS);
-    //   dynamic_states.push(vk::DynamicState::DEPTH_BIAS_ENABLE);
-    //   dynamic_states.push(vk::DynamicState::DEPTH_TEST_ENABLE_EXT);
-    //   dynamic_states.push(vk::DynamicState::DEPTH_WRITE_ENABLE_EXT);
-    //   dynamic_states.push(vk::DynamicState::DEPTH_COMPARE_OP_EXT);
-    // }
-    // if swapchain.has_stencil {
-    //   dynamic_states.push(vk::DynamicState::STENCIL_TEST_ENABLE_EXT);
-    //   dynamic_states.push(vk::DynamicState::STENCIL_OP_EXT);
-    //   dynamic_states.push(vk::DynamicState::STENCIL_WRITE_MASK);
-    //   dynamic_states.push(vk::DynamicState::STENCIL_COMPARE_MASK);
-    //   dynamic_states.push(vk::DynamicState::STENCIL_REFERENCE);
-    // }
+    let dynamic_states = dynamic_states
+      .iter()
+      .map(|ds| vk::DynamicState::from(*ds))
+      .collect::<Vec<_>>();
     let dynamic_state_info = vk::PipelineDynamicStateCreateInfo::default()
       .dynamic_states(dynamic_states.as_slice());
 
@@ -780,7 +820,6 @@ impl HalaGraphicsPipeline {
       .color_blend_state(&colourblend_info)
       .dynamic_state(&dynamic_state_info)
       .layout(pipeline_layout)
-      // .render_pass(renderpass.raw)
       .push_next(&mut rendering_info)
       .subpass(0);
 
