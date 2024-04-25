@@ -524,7 +524,7 @@ impl HalaCommandBufferSet {
   /// param index: The index of the command buffer.
   /// param pipeline: The pipeline.
   /// param shader_stage: The shader stage.
-  /// param offset: The offset.
+  /// param offset: The offset in bytes.
   /// param data: The data.
   pub fn push_constants(
     &self,
@@ -536,6 +536,33 @@ impl HalaCommandBufferSet {
   ) {
     let logical_device = self.logical_device.borrow();
     unsafe {
+      logical_device.raw.cmd_push_constants(
+        self.raw[index],
+        pipeline.layout,
+        shader_stage.into(),
+        offset,
+        data,
+      )
+    }
+  }
+
+  /// Push constants as f32.
+  /// param index: The index of the command buffer.
+  /// param pipeline: The pipeline.
+  /// param shader_stage: The shader stage.
+  /// param offset: The offset in bytes.
+  /// param data: The data.
+  pub fn push_constants_f32(
+    &self,
+    index: usize,
+    pipeline: &crate::HalaGraphicsPipeline,
+    shader_stage: crate::HalaShaderStageFlags,
+    offset: u32,
+    data: &[f32],
+  ) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      let data = std::slice::from_raw_parts(data.as_ptr() as *const u8, data.len() * std::mem::size_of::<f32>());
       logical_device.raw.cmd_push_constants(
         self.raw[index],
         pipeline.layout,
