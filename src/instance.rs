@@ -132,11 +132,23 @@ impl HalaInstance {
         ash::mvk::macos_surface::NAME.as_ptr(),
       ];
 
-      let instance_create_info = vk::InstanceCreateInfo::default()
-        .push_next(&mut debugcreateinfo)
-        .application_info(&app_info)
-        .enabled_layer_names(layer_name_ptrs.as_slice())
-        .enabled_extension_names(extension_name_ptrs.as_slice());
+      let validation_feature_enables = vec![vk::ValidationFeatureEnableEXT::DEBUG_PRINTF];
+      let mut validation_features = vk::ValidationFeaturesEXT::default()
+        .enabled_validation_features(&validation_feature_enables);
+
+      let instance_create_info = if cfg!(debug_assertions) {
+        vk::InstanceCreateInfo::default()
+          .push_next(&mut debugcreateinfo)
+          .push_next(&mut validation_features)
+          .application_info(&app_info)
+          .enabled_layer_names(layer_name_ptrs.as_slice())
+          .enabled_extension_names(extension_name_ptrs.as_slice())
+      } else {
+        vk::InstanceCreateInfo::default()
+          .application_info(&app_info)
+          .enabled_layer_names(layer_name_ptrs.as_slice())
+          .enabled_extension_names(extension_name_ptrs.as_slice())
+      };
       entry.create_instance(&instance_create_info, None)
         .map_err(|err| HalaGfxError::new("Failed to create Vulkan instance.", Some(Box::new(err))))?
     };

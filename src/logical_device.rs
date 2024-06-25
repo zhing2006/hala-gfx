@@ -489,6 +489,7 @@ impl HalaLogicalDevice {
       );
     }
     let mut extension_name_ptrs = vec![
+      ash::khr::spirv_1_4::NAME.as_ptr(),
       ash::khr::swapchain::NAME.as_ptr(),
       ash::khr::maintenance1::NAME.as_ptr(),
       ash::khr::maintenance2::NAME.as_ptr(),
@@ -496,15 +497,18 @@ impl HalaLogicalDevice {
       ash::khr::maintenance4::NAME.as_ptr(),
       ash::ext::descriptor_indexing::NAME.as_ptr(),
       ash::khr::synchronization2::NAME.as_ptr(),
+      ash::khr::shader_float_controls::NAME.as_ptr(),
+      ash::khr::shader_float_controls2::NAME.as_ptr(),
     ];
+    if gpu_req.require_mesh_shader {
+      extension_name_ptrs.push(ash::ext::mesh_shader::NAME.as_ptr());
+    }
     if gpu_req.require_ray_tracing {
       extension_name_ptrs.push(ash::khr::acceleration_structure::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::deferred_host_operations::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::ray_tracing_pipeline::NAME.as_ptr());
       // extension_name_ptrs.push(ash::khr::ray_tracing_maintenance1::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::buffer_device_address::NAME.as_ptr());
-      extension_name_ptrs.push(ash::khr::spirv_1_4::NAME.as_ptr());
-      extension_name_ptrs.push(ash::khr::shader_float_controls::NAME.as_ptr());
       extension_name_ptrs.push(ash::ext::scalar_block_layout::NAME.as_ptr());
     }
     let mut descriptor_indexing_features =
@@ -517,6 +521,14 @@ impl HalaLogicalDevice {
       vk::PhysicalDeviceDynamicRenderingFeatures::default();
     let mut synchronization2_features =
       vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
+    let mut mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT::default()
+      .mesh_shader(true)
+      .task_shader(true);
+    if cfg!(debug_assertions) {
+      if physical_device.features.pipeline_statistics_query == vk::TRUE {
+        mesh_shader_features = mesh_shader_features.mesh_shader_queries(true);
+      }
+    }
     let mut ray_tracing_pipeline_features =
       vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::default();
     let mut acceleration_structure_features =
@@ -527,6 +539,9 @@ impl HalaLogicalDevice {
       .push_next(&mut scalar_block_layout_features)
       .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features);
+    if gpu_req.require_mesh_shader {
+      features2 = features2.push_next(&mut mesh_shader_features);
+    }
     if gpu_req.require_ray_tracing {
       features2 = features2
         .push_next(&mut ray_tracing_pipeline_features)
