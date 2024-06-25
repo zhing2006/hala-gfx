@@ -27,6 +27,8 @@ impl HalaShaderStageFlags {
   pub const MISS: Self = Self(vk::ShaderStageFlags::MISS_KHR.as_raw());
   pub const INTERSECTION: Self = Self(vk::ShaderStageFlags::INTERSECTION_KHR.as_raw());
   pub const CALLABLE: Self = Self(vk::ShaderStageFlags::CALLABLE_KHR.as_raw());
+  pub const TASK: Self = Self(vk::ShaderStageFlags::TASK_EXT.as_raw());
+  pub const MESH: Self = Self(vk::ShaderStageFlags::MESH_EXT.as_raw());
 }
 
 impl std::convert::From<vk::ShaderStageFlags> for HalaShaderStageFlags {
