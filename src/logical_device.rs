@@ -499,6 +499,7 @@ impl HalaLogicalDevice {
       ash::khr::synchronization2::NAME.as_ptr(),
       ash::khr::shader_float_controls::NAME.as_ptr(),
       ash::khr::shader_float_controls2::NAME.as_ptr(),
+      ash::khr::buffer_device_address::NAME.as_ptr(),
     ];
     if gpu_req.require_mesh_shader {
       extension_name_ptrs.push(ash::ext::mesh_shader::NAME.as_ptr());
@@ -508,7 +509,6 @@ impl HalaLogicalDevice {
       extension_name_ptrs.push(ash::khr::deferred_host_operations::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::ray_tracing_pipeline::NAME.as_ptr());
       // extension_name_ptrs.push(ash::khr::ray_tracing_maintenance1::NAME.as_ptr());
-      extension_name_ptrs.push(ash::khr::buffer_device_address::NAME.as_ptr());
       extension_name_ptrs.push(ash::ext::scalar_block_layout::NAME.as_ptr());
     }
     let mut descriptor_indexing_features =
