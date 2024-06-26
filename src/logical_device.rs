@@ -503,6 +503,7 @@ impl HalaLogicalDevice {
     ];
     if gpu_req.require_mesh_shader {
       extension_name_ptrs.push(ash::ext::mesh_shader::NAME.as_ptr());
+      extension_name_ptrs.push(ash::khr::fragment_shading_rate::NAME.as_ptr());
     }
     if gpu_req.require_ray_tracing {
       extension_name_ptrs.push(ash::khr::acceleration_structure::NAME.as_ptr());
@@ -523,12 +524,20 @@ impl HalaLogicalDevice {
       vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
     let mut mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT::default()
       .mesh_shader(true)
-      .task_shader(true);
+      .task_shader(true)
+      .multiview_mesh_shader(false)
+      .primitive_fragment_shading_rate_mesh_shader(true);
     if cfg!(debug_assertions) {
       if physical_device.features.pipeline_statistics_query == vk::TRUE {
         mesh_shader_features = mesh_shader_features.mesh_shader_queries(true);
       }
     }
+    let mut multiview_features = vk::PhysicalDeviceMultiviewFeatures::default()
+      .multiview(false);
+    let mut primitive_fragment_shading_rate_features = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR::default()
+      .pipeline_fragment_shading_rate(false)
+      .primitive_fragment_shading_rate(false)
+      .attachment_fragment_shading_rate(false);
     let mut ray_tracing_pipeline_features =
       vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::default();
     let mut acceleration_structure_features =
@@ -540,7 +549,10 @@ impl HalaLogicalDevice {
       .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features);
     if gpu_req.require_mesh_shader {
-      features2 = features2.push_next(&mut mesh_shader_features);
+      features2 = features2
+        .push_next(&mut mesh_shader_features)
+        .push_next(&mut multiview_features)
+        .push_next(&mut primitive_fragment_shading_rate_features);
     }
     if gpu_req.require_ray_tracing {
       features2 = features2
