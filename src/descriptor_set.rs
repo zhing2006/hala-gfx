@@ -356,7 +356,7 @@ impl HalaDescriptorSet {
   /// param index: The index.
   /// param binding: The binding.
   /// param samplers: The samplers.
-  pub fn update_sampler<T>(&self, index: usize, binding: u32, samplers: &[T])
+  pub fn update_samplers<T>(&self, index: usize, binding: u32, samplers: &[T])
     where T: AsRef<crate::HalaSampler>
   {
     let sampler_infos = samplers
