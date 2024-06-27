@@ -28,12 +28,16 @@ pub struct HalaInstance {
   #[allow(dead_code)]
   pub(crate) entry: ash::Entry,
   pub raw: ash::Instance,
+
+  pub(crate) debug_utils_loader: ash::ext::debug_utils::Instance,
+  pub(crate) debug_call_back: vk::DebugUtilsMessengerEXT,
 }
 
 /// The Drop trait implementation of the instance.
 impl Drop for HalaInstance {
   fn drop(&mut self) {
     unsafe {
+      self.debug_utils_loader.destroy_debug_utils_messenger(self.debug_call_back, None);
       self.raw.destroy_instance(None);
     }
     log::debug!("A HalaInstance is dropped.");
@@ -54,13 +58,15 @@ impl HalaInstance {
     };
 
     // Create Vulkan instance.
-    let instance = Self::create_instance(name, gpu_req, &entry)?;
+    let (debug_utils_loader, debug_call_back, instance) = Self::create_instance(name, gpu_req, &entry)?;
 
     log::debug!("A HalaInstance is created.");
     Ok(
       Self {
         entry,
         raw: instance,
+        debug_utils_loader,
+        debug_call_back,
       }
     )
   }
@@ -69,9 +75,9 @@ impl HalaInstance {
   /// param name: The name of the instance.
   /// param gpu_req: The GPU requirements.
   /// param entry: The Vulkan entry.
-  /// return: The Vulkan instance.
-  fn create_instance(name: &str, gpu_req: &crate::HalaGPURequirements, entry: &ash::Entry) -> Result<ash::Instance, HalaGfxError> {
-    let instance = unsafe {
+  /// return: The debug utils loader, the debug call back, and the instance.
+  fn create_instance(name: &str, gpu_req: &crate::HalaGPURequirements, entry: &ash::Entry) -> Result<(ash::ext::debug_utils::Instance, vk::DebugUtilsMessengerEXT, ash::Instance), HalaGfxError> {
+    let (debug_utils_loader, debug_call_back, instance) = unsafe {
       let app_name = CString::new(name)
         .map_err(|err| HalaGfxError::new("Failed to create CString app_name.", Some(Box::new(err))))?;
       let engine_name = CString::new("Hala")
@@ -83,7 +89,7 @@ impl HalaInstance {
         .engine_version(vk::make_api_version(0, 0, 1, 0))
         .api_version(vk::make_api_version(0, gpu_req.version.0, gpu_req.version.1, gpu_req.version.2));
 
-      let mut debugcreateinfo = if cfg!(debug_assertions) {
+      let debug_create_info = if cfg!(debug_assertions) {
         vk::DebugUtilsMessengerCreateInfoEXT::default()
           .message_severity(
             vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
@@ -138,7 +144,6 @@ impl HalaInstance {
 
       let instance_create_info = if cfg!(debug_assertions) {
         vk::InstanceCreateInfo::default()
-          .push_next(&mut debugcreateinfo)
           .push_next(&mut validation_features)
           .application_info(&app_info)
           .enabled_layer_names(layer_name_ptrs.as_slice())
@@ -149,9 +154,16 @@ impl HalaInstance {
           .enabled_layer_names(layer_name_ptrs.as_slice())
           .enabled_extension_names(extension_name_ptrs.as_slice())
       };
-      entry.create_instance(&instance_create_info, None)
-        .map_err(|err| HalaGfxError::new("Failed to create Vulkan instance.", Some(Box::new(err))))?
+      let instance = entry.create_instance(&instance_create_info, None)
+        .map_err(|err| HalaGfxError::new("Failed to create Vulkan instance.", Some(Box::new(err))))?;
+
+      let debug_utils_loader = ash::ext::debug_utils::Instance::new(&entry, &instance);
+      let debug_call_back = debug_utils_loader
+        .create_debug_utils_messenger(&debug_create_info, None)
+        .map_err(|err| HalaGfxError::new("Failed to create Vulkan debug utils messenger.", Some(Box::new(err))))?;
+
+      (debug_utils_loader, debug_call_back, instance)
     };
-    Ok(instance)
+    Ok((debug_utils_loader, debug_call_back, instance))
   }
 }
