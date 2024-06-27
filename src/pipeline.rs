@@ -740,9 +740,9 @@ impl HalaGraphicsPipeline {
 
     let viewports = [vk::Viewport {
       x: 0.,
-      y: 0.,
+      y: swapchain.desc.dims.height as f32,
       width: swapchain.desc.dims.width as f32,
-      height: swapchain.desc.dims.height as f32,
+      height: -(swapchain.desc.dims.height as f32),
       min_depth: 0.,
       max_depth: 1.,
     }];

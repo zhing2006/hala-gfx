@@ -129,7 +129,8 @@ impl HalaSampler {
       .anisotropy_enable(anisotropy_enable)
       .max_anisotropy(max_anisotropy)
       .min_lod(lod.0)
-      .max_lod(lod.1);
+      .max_lod(lod.1)
+      .unnormalized_coordinates(false);
     let raw = unsafe {
       let sampler = logical_device.borrow().raw.create_sampler(&create_info, None)
         .map_err(|err| HalaGfxError::new("Failed to create sampler.", Some(Box::new(err))))?;

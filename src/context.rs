@@ -57,6 +57,11 @@ impl HalaContext {
   /// param window: The window.
   /// return: The context.
   pub fn new(name: &str, gpu_req: &HalaGPURequirements, window: &winit::window::Window) -> Result<Self, HalaGfxError> {
+    // Validate the GPU requirements.
+    if gpu_req.require_10bits_output && gpu_req.require_srgb_surface {
+      return Err(HalaGfxError::new("10bits output and sRGB surface can't be required at the same time.", None));
+    }
+
     // Create instance.
     let instance = crate::HalaInstance::new(name, gpu_req)?;
 

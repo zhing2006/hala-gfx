@@ -306,34 +306,36 @@ impl HalaSwapchain {
         found_format
       }
     } else {
-      let first_pass_fmt = [vk::Format::R8G8B8A8_UINT, vk::Format::R8G8B8A8_UNORM, vk::Format::R8G8B8A8_SINT, vk::Format::R8G8B8A8_SNORM];
-      let second_pass_fmt = [vk::Format::B8G8R8A8_UINT, vk::Format::B8G8R8A8_UNORM, vk::Format::B8G8R8A8_SINT, vk::Format::B8G8R8A8_SNORM];
+      let mut finding_passes = Vec::new();
+      if gpu_req.require_srgb_surface {
+        finding_passes.push(vec![vk::Format::R8G8B8A8_SRGB]);
+        finding_passes.push(vec![vk::Format::B8G8R8A8_SRGB]);
+      }
+      finding_passes.push(vec![vk::Format::R8G8B8A8_UINT, vk::Format::R8G8B8A8_UNORM, vk::Format::R8G8B8A8_SINT, vk::Format::R8G8B8A8_SNORM]);
+      finding_passes.push(vec![vk::Format::B8G8R8A8_UINT, vk::Format::B8G8R8A8_UNORM, vk::Format::B8G8R8A8_SINT, vk::Format::B8G8R8A8_SNORM]);
+
       let mut found = false;
       let mut found_format = vk::Format::UNDEFINED;
-      for format in surface_formats.iter() {
-        if first_pass_fmt.contains(&format.format)
-          && format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
-        {
-          found = true;
-          found_format = format.format;
-          break;
-        }
-      }
-      if !found {
+      for pass in finding_passes.iter() {
         for format in surface_formats.iter() {
-          if second_pass_fmt.contains(&format.format)
-            && format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
-          {
+          if pass.contains(&format.format) && format.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR {
             found = true;
             found_format = format.format;
             break;
           }
+        }
+
+        if found {
+          break;
         }
       }
       if !found {
         log::warn!("Failed to find a 8bits output format, use the first format instead.");
         surface_formats.first().unwrap().format
       } else {
+        if gpu_req.require_srgb_surface && found_format != vk::Format::R8G8B8A8_SRGB && found_format != vk::Format::B8G8R8A8_SRGB {
+          log::warn!("Failed to find a sRGB format, {:?} format instead.", found_format);
+        }
         found_format
       }
     };
