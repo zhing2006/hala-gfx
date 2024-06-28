@@ -434,7 +434,7 @@ impl HalaImage {
       .view_type(view_type)
       .format(format)
       .subresource_range(vk::ImageSubresourceRange {
-        aspect_mask: vk::ImageAspectFlags::COLOR,
+        aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
         base_mip_level: 0,
         level_count: mip_levels,
         base_array_layer: 0,
