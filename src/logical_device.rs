@@ -39,8 +39,8 @@ impl std::convert::From<HalaMemoryLocation> for gpu_allocator::MemoryLocation {
 /// The logical device.
 pub struct HalaLogicalDevice {
   pub raw: ash::Device,
-  pub debug_utils: ash::ext::debug_utils::Instance,
   pub debug_utils_loader: ash::ext::debug_utils::Device,
+  pub mesh_shader_loader: ash::ext::mesh_shader::Device,
   pub graphics_queue_family_index: u32,
   pub transfer_queue_family_index: u32,
   pub compute_queue_family_index: u32,
@@ -130,8 +130,8 @@ impl HalaLogicalDevice {
     Ok(
       Self {
         raw: logical_device.clone(),
-        debug_utils: ash::ext::debug_utils::Instance::new(&instance.entry, &instance.raw),
         debug_utils_loader: ash::ext::debug_utils::Device::new(&instance.raw, &logical_device),
+        mesh_shader_loader: ash::ext::mesh_shader::Device::new(&instance.raw, &logical_device),
         graphics_queue_family_index,
         transfer_queue_family_index,
         compute_queue_family_index,

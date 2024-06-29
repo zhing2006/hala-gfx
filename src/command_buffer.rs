@@ -735,6 +735,68 @@ impl HalaCommandBufferSet {
     }
   }
 
+  /// Draw mesh tasks.
+  /// param index: The index of the command buffer.
+  /// param group_count_x: The group count x.
+  /// param group_count_y: The group count y.
+  /// param group_count_z: The group count z.
+  pub fn draw_mesh_tasks(
+    &self,
+    index: usize,
+    group_count_x: u32,
+    group_count_y: u32,
+    group_count_z: u32,
+  ) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.mesh_shader_loader.cmd_draw_mesh_tasks(self.raw[index], group_count_x, group_count_y, group_count_z);
+    }
+  }
+
+  /// Draw mesh tasks indirect.
+  /// param index: The index of the command buffer.
+  /// param buffer: The buffer.
+  /// param offset: The offset.
+  /// param draw_count: The draw count.
+  /// param stride: The stride.
+  pub fn cmd_draw_mesh_tasks_indirect(
+    &self,
+    index: usize,
+    buffer: &HalaBuffer,
+    offset: u64,
+    draw_count: u32,
+    stride: u32,
+  ) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.mesh_shader_loader.cmd_draw_mesh_tasks_indirect(self.raw[index], buffer.raw, offset, draw_count, stride);
+    }
+  }
+
+  /// Draw mesh tasks indirect count.
+  /// param index: The index of the command buffer.
+  /// param buffer: The buffer.
+  /// param offset: The offset.
+  /// param count_buffer: The count buffer.
+  /// param count_buffer_offset: The count buffer offset.
+  /// param max_draw_count: The max draw count.
+  /// param stride: The stride.
+  pub fn cmd_draw_mesh_tasks_indirect_count(
+    &self,
+    index: usize,
+    buffer: &HalaBuffer,
+    offset: u64,
+    count_buffer: &HalaBuffer,
+    count_buffer_offset: u64,
+    max_draw_count: u32,
+    stride: u32,
+  ) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.mesh_shader_loader.cmd_draw_mesh_tasks_indirect_count(self.raw[index], buffer.raw, offset, count_buffer.raw, count_buffer_offset, max_draw_count, stride);
+    }
+  }
+
   /// Dispatch compute.
   /// param index: The index of the command buffer.
   /// param group_count_x: The group count x.
