@@ -759,7 +759,7 @@ impl HalaCommandBufferSet {
   /// param offset: The offset.
   /// param draw_count: The draw count.
   /// param stride: The stride.
-  pub fn cmd_draw_mesh_tasks_indirect(
+  pub fn draw_mesh_tasks_indirect(
     &self,
     index: usize,
     buffer: &HalaBuffer,
@@ -781,7 +781,7 @@ impl HalaCommandBufferSet {
   /// param count_buffer_offset: The count buffer offset.
   /// param max_draw_count: The max draw count.
   /// param stride: The stride.
-  pub fn cmd_draw_mesh_tasks_indirect_count(
+  pub fn draw_mesh_tasks_indirect_count(
     &self,
     index: usize,
     buffer: &HalaBuffer,
