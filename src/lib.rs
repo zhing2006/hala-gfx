@@ -49,6 +49,7 @@ pub struct HalaGPURequirements {
   pub is_low_latency: bool,
   pub require_depth: bool,
   pub require_stencil: bool,
+  pub require_printf_in_shader: bool,
 }
 
 impl Default for HalaGPURequirements {
@@ -67,6 +68,7 @@ impl Default for HalaGPURequirements {
       is_low_latency: false,
       require_depth: true,
       require_stencil: false,
+      require_printf_in_shader: false,
     }
   }
 }

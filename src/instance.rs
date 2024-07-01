@@ -142,7 +142,7 @@ impl HalaInstance {
       let mut validation_features = vk::ValidationFeaturesEXT::default()
         .enabled_validation_features(&validation_feature_enables);
 
-      let instance_create_info = if cfg!(debug_assertions) {
+      let instance_create_info = if cfg!(debug_assertions) && gpu_req.require_printf_in_shader {
         vk::InstanceCreateInfo::default()
           .push_next(&mut validation_features)
           .application_info(&app_info)

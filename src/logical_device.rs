@@ -498,7 +498,7 @@ impl HalaLogicalDevice {
       ash::ext::descriptor_indexing::NAME.as_ptr(),
       ash::khr::synchronization2::NAME.as_ptr(),
       ash::khr::shader_float_controls::NAME.as_ptr(),
-      ash::khr::shader_float_controls2::NAME.as_ptr(),
+      // ash::khr::shader_float_controls2::NAME.as_ptr(), // This extension is cause nSight stop working.
       ash::khr::buffer_device_address::NAME.as_ptr(),
     ];
     if gpu_req.require_mesh_shader {
@@ -512,6 +512,8 @@ impl HalaLogicalDevice {
       // extension_name_ptrs.push(ash::khr::ray_tracing_maintenance1::NAME.as_ptr());
       extension_name_ptrs.push(ash::ext::scalar_block_layout::NAME.as_ptr());
     }
+    log::debug!("Extension names: {:?}", extension_name_ptrs.iter().map(|&ptr| unsafe { std::ffi::CStr::from_ptr(ptr) }).collect::<Vec<_>>() );
+
     let mut descriptor_indexing_features =
       vk::PhysicalDeviceDescriptorIndexingFeaturesEXT::default();
     let mut buffer_device_address_features =
@@ -562,6 +564,8 @@ impl HalaLogicalDevice {
     unsafe {
       instance.raw.get_physical_device_features2(physical_device.raw, &mut features2);
     }
+    log::debug!("Features2: {:?}", features2);
+
     let device_create_infos = vk::DeviceCreateInfo::default()
       .queue_create_infos(&queue_infos)
       .enabled_extension_names(&extension_name_ptrs)
