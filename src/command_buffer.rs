@@ -781,6 +781,7 @@ impl HalaCommandBufferSet {
   /// param count_buffer_offset: The count buffer offset.
   /// param max_draw_count: The max draw count.
   /// param stride: The stride.
+  #[allow(clippy::too_many_arguments)]
   pub fn draw_mesh_tasks_indirect_count(
     &self,
     index: usize,

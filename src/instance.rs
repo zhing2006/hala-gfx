@@ -157,7 +157,7 @@ impl HalaInstance {
       let instance = entry.create_instance(&instance_create_info, None)
         .map_err(|err| HalaGfxError::new("Failed to create Vulkan instance.", Some(Box::new(err))))?;
 
-      let debug_utils_loader = ash::ext::debug_utils::Instance::new(&entry, &instance);
+      let debug_utils_loader = ash::ext::debug_utils::Instance::new(entry, &instance);
       let debug_call_back = debug_utils_loader
         .create_debug_utils_messenger(&debug_create_info, None)
         .map_err(|err| HalaGfxError::new("Failed to create Vulkan debug utils messenger.", Some(Box::new(err))))?;

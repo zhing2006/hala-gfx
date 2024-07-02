@@ -150,7 +150,7 @@ impl HalaSwapchain {
 
       self.swapchain_loader.acquire_next_image(
         self.swapchain,
-        std::u64::MAX,
+        u64::MAX,
         self.image_availables[self.current_image_index],
         vk::Fence::null(),
       ).map_err(|err| HalaGfxError::new("Failed to acquire next image.", Some(Box::new(err))))?
@@ -164,7 +164,7 @@ impl HalaSwapchain {
       self.logical_device.borrow().raw.wait_for_fences(
         &[self.draw_fences[command_buffer_index]],
         true,
-        std::u64::MAX,
+        u64::MAX,
       ).map_err(|err| HalaGfxError::new("Failed to wait for fence.", Some(Box::new(err))))?;
     }
     Ok(())
@@ -345,7 +345,7 @@ impl HalaSwapchain {
     let queue_family_indices = [logical_device.graphics_queue_family_index];
     let min_image_count = surface_capabilities.min_image_count;
     let max_image_count = if surface_capabilities.max_image_count == 0 {
-      std::u32::MAX
+      u32::MAX
     } else {
       surface_capabilities.max_image_count
     };

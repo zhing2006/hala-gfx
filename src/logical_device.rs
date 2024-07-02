@@ -529,10 +529,8 @@ impl HalaLogicalDevice {
       .task_shader(true)
       .multiview_mesh_shader(false)
       .primitive_fragment_shading_rate_mesh_shader(true);
-    if cfg!(debug_assertions) {
-      if physical_device.features.pipeline_statistics_query == vk::TRUE {
-        mesh_shader_features = mesh_shader_features.mesh_shader_queries(true);
-      }
+    if cfg!(debug_assertions) && physical_device.features.pipeline_statistics_query == vk::TRUE {
+      mesh_shader_features = mesh_shader_features.mesh_shader_queries(true);
     }
     let mut multiview_features = vk::PhysicalDeviceMultiviewFeatures::default()
       .multiview(false);
