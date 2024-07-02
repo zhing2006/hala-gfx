@@ -144,8 +144,12 @@ impl HalaQueryPool {
   }
 
   /// Get the data.
-  pub fn wait(&self, first: u32) -> Result<Vec<u64>, HalaGfxError> {
-    let mut data: Vec<u64> = vec![0; self.size as usize];
+  /// param first: The first query.
+  /// param count: The query count.
+  /// return: The data.
+  pub fn wait(&self, first: u32, count: u32) -> Result<Vec<u64>, HalaGfxError> {
+    assert!(first + count <= self.size, "The query range is out of range.");
+    let mut data: Vec<u64> = vec![0; count as usize];
 
     unsafe {
       self.logical_device.borrow().raw.get_query_pool_results(

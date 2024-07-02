@@ -110,7 +110,7 @@ impl HalaContext {
     let timestamp_query_pool = HalaQueryPool::new_timestamp(
       &physical_device,
       Rc::clone(&logical_device),
-      2,
+      (swapchain.num_of_images * 2) as u32,
       "timestamp.query_pool",
     )?;
 
@@ -149,9 +149,10 @@ impl HalaContext {
   }
 
   /// Get GPU frame time.
+  /// param index: The index of the frame image.
   /// return: The GPU frame time.
-  pub fn get_gpu_frame_time(&self) -> Result<Duration, HalaGfxError> {
-    let result = self.timestamp_query_pool.wait(0)?;
+  pub fn get_gpu_frame_time(&self, index: usize) -> Result<Duration, HalaGfxError> {
+    let result = self.timestamp_query_pool.wait((index * 2) as u32, 2)?;
     let time = Duration::from_nanos(
       (result[1].saturating_sub(result[0]) as f64 * self.timestamp_query_pool.timestamp_period) as u64);
 
@@ -208,8 +209,8 @@ impl HalaContext {
   ) -> Result<(), HalaGfxError> {
     command_buffers.reset(index, false)?;
     command_buffers.begin(index, crate::HalaCommandBufferUsageFlags::empty())?;
-    command_buffers.reset_query_pool(index, &self.timestamp_query_pool, 0, self.timestamp_query_pool.size);
-    command_buffers.write_timestamp(index, HalaPipelineStageFlags2::NONE, &self.timestamp_query_pool, 0);
+    command_buffers.reset_query_pool(index, &self.timestamp_query_pool, (index * 2) as u32, 2);
+    command_buffers.write_timestamp(index, HalaPipelineStageFlags2::NONE, &self.timestamp_query_pool, (index * 2) as u32);
 
     let need_copy_to_swapchain = ray_tracing_fn(index, command_buffers)?;
 
@@ -351,7 +352,7 @@ impl HalaContext {
       index,
       HalaPipelineStageFlags2::ALL_COMMANDS,
       &self.timestamp_query_pool,
-      1);
+      (index * 2 + 1) as u32);
     command_buffers.end(index)?;
 
     Ok(())
