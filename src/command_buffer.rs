@@ -394,6 +394,7 @@ impl HalaCommandBufferSet {
   /// param depth_clear_value: The depth clear value.
   /// param stencil_clear_value: The stencil clear value.
   /// return: The result.
+  #[allow(clippy::too_many_arguments)]
   pub fn begin_rendering_with_rt<T>(
     &self,
     index: usize,
