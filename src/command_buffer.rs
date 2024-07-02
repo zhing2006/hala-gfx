@@ -385,40 +385,45 @@ impl HalaCommandBufferSet {
     }
   }
 
-  /// Begin rendering with the specified images.
+  /// Begin rendering with the specified render targets.
   /// param index: The index of the command buffer.
-  /// param color_image: The color image.
+  /// param color_images: The color images.
   /// param depth_image: The depth image.
   /// param render_area: The render area(x, y, width, height).
   /// param color_clear_values: The color clear values.
   /// param depth_clear_value: The depth clear value.
   /// param stencil_clear_value: The stencil clear value.
   /// return: The result.
-  pub fn begin_rendering_ex(
+  pub fn begin_rendering_with_rt<T>(
     &self,
     index: usize,
-    color_image: &HalaImage,
-    depth_image: Option<&HalaImage>,
+    color_images: &[T],
+    depth_image: Option<T>,
     render_area: (i32, i32, u32, u32),
     color_clear_values: Option<[f32; 4]>,
     depth_clear_value: Option<f32>,
     stencil_clear_value: Option<u32>,
-  ) {
+  )
+    where T: AsRef<HalaImage>
+  {
     let has_depth = depth_image.is_some();
-    let has_stencil = depth_image.map_or(false, |image| image.format == HalaFormat::D16_UNORM_S8_UINT || image.format == HalaFormat::D24_UNORM_S8_UINT || image.format == HalaFormat::D32_SFLOAT_S8_UINT);
+    let has_stencil = depth_image.as_ref().map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
 
-    let color_attachment_info = vk::RenderingAttachmentInfo::default()
-      .image_view(color_image.view)
-      .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-      .load_op(if color_clear_values.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::STORE)
-      .clear_value(vk::ClearValue {
-        color: vk::ClearColorValue {
-          float32: color_clear_values.unwrap_or([0f32; 4]),
-        },
-      });
+    let color_attachment_info = color_images.iter().map(|image| {
+      vk::RenderingAttachmentInfo::default()
+        .image_view(image.as_ref().view)
+        .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .load_op(if color_clear_values.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+        .store_op(vk::AttachmentStoreOp::STORE)
+        .clear_value(vk::ClearValue {
+          color: vk::ClearColorValue {
+            float32: color_clear_values.unwrap_or([0f32; 4]),
+          },
+        })
+    }).collect::<Vec<_>>();
+    let depth_image_view = depth_image.as_ref().map_or(vk::ImageView::null(), |image| image.as_ref().view);
     let depth_attachment_info = vk::RenderingAttachmentInfo::default()
-      .image_view(depth_image.map_or(vk::ImageView::null(), |image| image.view))
+      .image_view(depth_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if depth_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
       .store_op(vk::AttachmentStoreOp::DONT_CARE)
@@ -429,7 +434,7 @@ impl HalaCommandBufferSet {
         },
       });
     let stencil_attachment_info = vk::RenderingAttachmentInfo::default()
-      .image_view(depth_image.map_or(vk::ImageView::null(), |image| image.view))
+      .image_view(depth_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
       .store_op(vk::AttachmentStoreOp::DONT_CARE)
@@ -446,7 +451,7 @@ impl HalaCommandBufferSet {
         extent: vk::Extent2D { width: render_area.2, height: render_area.3 },
       })
       .layer_count(1)
-      .color_attachments(std::slice::from_ref(&color_attachment_info));
+      .color_attachments(color_attachment_info.as_slice());
     let rendering_info = if has_depth {
       rendering_info.depth_attachment(&depth_attachment_info)
     } else {
