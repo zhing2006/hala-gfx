@@ -703,7 +703,7 @@ impl HalaGraphicsPipeline {
   pub fn new_with_rt<T, DSL, VIAD, VIBD, PCR, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
-    depth_image: Option<T>,
+    depth_image: Option<&T>,
     descriptor_set_layouts: &[DSL],
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
@@ -954,7 +954,7 @@ impl HalaGraphicsPipeline {
   fn create_pipeline_with_rt<T, VIAD, VIBD, S>(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
-    depth_image: Option<T>,
+    depth_image: Option<&T>,
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
@@ -974,7 +974,7 @@ impl HalaGraphicsPipeline {
           S: AsRef<HalaShader>
   {
     let has_depth = depth_image.is_some();
-    let has_stencil = depth_image.as_ref().map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
+    let has_stencil = depth_image.map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
 
     let vertex_attribute_descriptions: Vec<vk::VertexInputAttributeDescription> = vertex_attribute_descriptions
       .iter()
@@ -1049,12 +1049,12 @@ impl HalaGraphicsPipeline {
     let rendering_info = vk::PipelineRenderingCreateInfo::default()
       .color_attachment_formats(formats.as_slice());
     let rendering_info = if has_depth {
-      rendering_info.depth_attachment_format(depth_image.as_ref().unwrap().as_ref().format.into())
+      rendering_info.depth_attachment_format(depth_image.unwrap().as_ref().format.into())
     } else {
       rendering_info
     };
     let mut rendering_info = if has_stencil {
-      rendering_info.stencil_attachment_format(depth_image.as_ref().unwrap().as_ref().format.into())
+      rendering_info.stencil_attachment_format(depth_image.unwrap().as_ref().format.into())
     } else {
       rendering_info
     };
