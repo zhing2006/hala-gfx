@@ -202,10 +202,12 @@ impl HalaContext {
     &self,
     index: usize,
     command_buffers: &HalaCommandBufferSet,
-    clear_values: Option<([f32; 4], f32, u32)>,
+    color_clear_values: Option<[f32; 4]>,
+    depth_clear_value: Option<f32>,
+    stencil_clear_value: Option<u32>,
     graphics_fn: F1,
     ray_tracing_image: Option<&HalaImage>,
-    ray_tracing_fn: F2
+    ray_tracing_fn: F2,
   ) -> Result<(), HalaGfxError> {
     command_buffers.reset(index, false)?;
     command_buffers.begin(index, crate::HalaCommandBufferUsageFlags::empty())?;
@@ -326,8 +328,9 @@ impl HalaContext {
       index,
       &self.swapchain,
       (0, 0, self.gpu_req.width, self.gpu_req.height),
-      clear_values.unwrap_or(([0.0, 0.0, 0.0, 1.0], 1.0, 0)),
-      (clear_values.is_some(), true, true)
+      color_clear_values,
+      depth_clear_value,
+      stencil_clear_value,
     );
 
     graphics_fn(index, command_buffers)?;
