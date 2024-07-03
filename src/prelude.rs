@@ -20,6 +20,7 @@ pub use crate::shader::{
 };
 pub use crate::format::HalaFormat;
 pub use crate::pipeline::{
+  HalaPipelineCreateFlags,
   HalaPipelineStageFlags,
   HalaPipelineStageFlags2,
   HalaVertexInputRate,

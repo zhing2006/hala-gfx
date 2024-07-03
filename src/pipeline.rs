@@ -7,6 +7,57 @@ use crate::{
   HalaDescriptorSetLayout, HalaFormat, HalaGfxError, HalaImage, HalaLogicalDevice, HalaPipelineCache, HalaShader, HalaShaderStageFlags, HalaSwapchain
 };
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HalaPipelineCreateFlags(u32);
+crate::hala_bitflags_wrapped!(HalaPipelineCreateFlags, u32);
+impl HalaPipelineCreateFlags {
+  pub const DISABLE_OPTIMIZATION: Self = Self(vk::PipelineCreateFlags::DISABLE_OPTIMIZATION.as_raw());
+  pub const ALLOW_DERIVATIVES: Self = Self(vk::PipelineCreateFlags::ALLOW_DERIVATIVES.as_raw());
+  pub const DERIVATIVE: Self = Self(vk::PipelineCreateFlags::DERIVATIVE.as_raw());
+  pub const VIEW_INDEX_FROM_DEVICE_INDEX: Self = Self(vk::PipelineCreateFlags::VIEW_INDEX_FROM_DEVICE_INDEX.as_raw());
+  pub const DISPATCH_BASE: Self = Self(vk::PipelineCreateFlags::DISPATCH_BASE.as_raw());
+  pub const FAIL_ON_PIPELINE_COMPILE_REQUIRED: Self = Self(vk::PipelineCreateFlags::FAIL_ON_PIPELINE_COMPILE_REQUIRED.as_raw());
+  pub const EARLY_RETURN_ON_FAILURE: Self = Self(vk::PipelineCreateFlags::EARLY_RETURN_ON_FAILURE.as_raw());
+  pub const RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT: Self = Self(vk::PipelineCreateFlags::RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_KHR.as_raw());
+  pub const RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT: Self = Self(vk::PipelineCreateFlags::RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_EXT.as_raw());
+  pub const RAY_TRACING_NO_NULL_ANY_HIT_SHADERS: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_NO_NULL_ANY_HIT_SHADERS_KHR.as_raw());
+  pub const RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_NO_NULL_CLOSEST_HIT_SHADERS_KHR.as_raw());
+  pub const RAY_TRACING_NO_NULL_MISS_SHADERS: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_NO_NULL_MISS_SHADERS_KHR.as_raw());
+  pub const RAY_TRACING_NO_NULL_INTERSECTION_SHADERS: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_NO_NULL_INTERSECTION_SHADERS_KHR.as_raw());
+  pub const RAY_TRACING_SKIP_TRIANGLES: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_SKIP_TRIANGLES_KHR.as_raw());
+  pub const RAY_TRACING_SKIP_AABBS: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_SKIP_AABBS_KHR.as_raw());
+  pub const RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_KHR.as_raw());
+  pub const DEFER_COMPILE: Self = Self(vk::PipelineCreateFlags::DEFER_COMPILE_NV.as_raw());
+  pub const CAPTURE_STATISTICS: Self = Self(vk::PipelineCreateFlags::CAPTURE_STATISTICS_KHR.as_raw());
+  pub const CAPTURE_INTERNAL_REPRESENTATIONS: Self = Self(vk::PipelineCreateFlags::CAPTURE_INTERNAL_REPRESENTATIONS_KHR.as_raw());
+  pub const INDIRECT_BINDABLE: Self = Self(vk::PipelineCreateFlags::INDIRECT_BINDABLE_NV.as_raw());
+  pub const LIBRARY: Self = Self(vk::PipelineCreateFlags::LIBRARY_KHR.as_raw());
+  pub const DESCRIPTOR_BUFFER: Self = Self(vk::PipelineCreateFlags::DESCRIPTOR_BUFFER_EXT.as_raw());
+  pub const RETAIN_LINK_TIME_OPTIMIZATION_INFO: Self = Self(vk::PipelineCreateFlags::RETAIN_LINK_TIME_OPTIMIZATION_INFO_EXT.as_raw());
+  pub const LINK_TIME_OPTIMIZATION: Self = Self(vk::PipelineCreateFlags::LINK_TIME_OPTIMIZATION_EXT.as_raw());
+  pub const RAY_TRACING_ALLOW_MOTION: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_ALLOW_MOTION_NV.as_raw());
+  pub const COLOR_ATTACHMENT_FEEDBACK_LOOP: Self = Self(vk::PipelineCreateFlags::COLOR_ATTACHMENT_FEEDBACK_LOOP_EXT.as_raw());
+  pub const DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP: Self = Self(vk::PipelineCreateFlags::DEPTH_STENCIL_ATTACHMENT_FEEDBACK_LOOP_EXT.as_raw());
+  pub const RAY_TRACING_OPACITY_MICROMAP: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_OPACITY_MICROMAP_EXT.as_raw());
+  pub const RAY_TRACING_DISPLACEMENT_MICROMAP: Self = Self(vk::PipelineCreateFlags::RAY_TRACING_DISPLACEMENT_MICROMAP_NV.as_raw());
+  pub const NO_PROTECTED_ACCESS: Self = Self(vk::PipelineCreateFlags::NO_PROTECTED_ACCESS_EXT.as_raw());
+  pub const PROTECTED_ACCESS_ONLY: Self = Self(vk::PipelineCreateFlags::PROTECTED_ACCESS_ONLY_EXT.as_raw());
+  pub const RASTERIZATION_STATE_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT: Self = Self::RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT;
+  pub const RASTERIZATION_STATE_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT: Self = Self::RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT;
+}
+
+impl std::convert::From<vk::PipelineCreateFlags> for HalaPipelineCreateFlags {
+  fn from(flags: vk::PipelineCreateFlags) -> Self {
+    Self(flags.as_raw())
+  }
+}
+
+impl std::convert::From<HalaPipelineCreateFlags> for vk::PipelineCreateFlags {
+  fn from(flags: HalaPipelineCreateFlags) -> Self {
+    vk::PipelineCreateFlags::from_raw(flags.0)
+  }
+}
+
 /// The pipeline stage flags.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HalaPipelineStageFlags(u32);
@@ -608,6 +659,7 @@ impl Drop for HalaGraphicsPipeline {
 /// param logical_device: The logical device.
 /// param swapchain: The swapchain.
 /// param descriptor_set_layouts: The descriptor set layouts.
+/// param flags: The pipeline create flags.
 /// param vertex_attribute_descriptions: The vertex attribute descriptions.
 /// param vertex_binding_descriptions: The vertex binding descriptions.
 /// param push_constant_ranges: The push constant ranges.
@@ -628,6 +680,7 @@ impl HalaGraphicsPipeline {
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     swapchain: &HalaSwapchain,
     descriptor_set_layouts: &[DSL],
+    flags: HalaPipelineCreateFlags,
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     push_constant_ranges: &[PCR],
@@ -657,6 +710,7 @@ impl HalaGraphicsPipeline {
     let graphics_pipeline = Self::create_pipeline(
       &logical_device,
       swapchain,
+      flags,
       vertex_attribute_descriptions,
       vertex_binding_descriptions,
       primitive_topology,
@@ -687,6 +741,7 @@ impl HalaGraphicsPipeline {
   /// color_images: The color render targets.
   /// depth_image: The depth render target.
   /// descriptor_set_layouts: The descriptor set layouts.
+  /// flags: The pipeline create flags.
   /// vertex_attribute_descriptions: The vertex attribute descriptions.
   /// vertex_binding_descriptions: The vertex binding descriptions.
   /// push_constant_ranges: The push constant ranges.
@@ -705,6 +760,7 @@ impl HalaGraphicsPipeline {
     color_images: &[T],
     depth_image: Option<&T>,
     descriptor_set_layouts: &[DSL],
+    flags: HalaPipelineCreateFlags,
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     push_constant_ranges: &[PCR],
@@ -736,6 +792,7 @@ impl HalaGraphicsPipeline {
       &logical_device,
       color_images,
       depth_image,
+      flags,
       vertex_attribute_descriptions,
       vertex_binding_descriptions,
       primitive_topology,
@@ -764,6 +821,7 @@ impl HalaGraphicsPipeline {
   /// Create a graphics pipeline.
   /// param logical_device: The logical device.
   /// param swapchain: The swapchain.
+  /// param flags: The pipeline create flags.
   /// param vertex_attribute_descriptions: The vertex attribute descriptions.
   /// param vertex_binding_descriptions: The vertex binding descriptions.
   /// param primitive_topology: The primitive topology.
@@ -780,6 +838,7 @@ impl HalaGraphicsPipeline {
   fn create_pipeline<VIAD, VIBD, S>(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     swapchain: &HalaSwapchain,
+    flags: HalaPipelineCreateFlags,
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
@@ -884,6 +943,7 @@ impl HalaGraphicsPipeline {
       .dynamic_states(dynamic_states.as_slice());
 
     let pipeline_info = vk::GraphicsPipelineCreateInfo::default()
+      .flags(flags.into())
       .stages(shader_stage_infos.as_slice())
       .vertex_input_state(&vertex_input_info)
       .input_assembly_state(&input_assembly_info)
@@ -938,6 +998,9 @@ impl HalaGraphicsPipeline {
 
   /// Create a graphics pipeline with specified render targets.
   /// param logical_device: The logical device.
+  /// param color_images: The color render targets.
+  /// param depth_image: The depth render target.
+  /// param flags: The pipeline create flags.
   /// param vertex_attribute_descriptions: The vertex attribute descriptions.
   /// param vertex_binding_descriptions: The vertex binding descriptions.
   /// param primitive_topology: The primitive topology.
@@ -955,6 +1018,7 @@ impl HalaGraphicsPipeline {
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
     depth_image: Option<&T>,
+    flags: HalaPipelineCreateFlags,
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
@@ -1067,6 +1131,7 @@ impl HalaGraphicsPipeline {
       .dynamic_states(dynamic_states.as_slice());
 
     let pipeline_info = vk::GraphicsPipelineCreateInfo::default()
+      .flags(flags.into())
       .stages(shader_stage_infos.as_slice())
       .vertex_input_state(&vertex_input_info)
       .input_assembly_state(&input_assembly_info)
