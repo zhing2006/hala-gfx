@@ -39,7 +39,7 @@ impl std::convert::From<HalaMemoryLocation> for gpu_allocator::MemoryLocation {
 /// The logical device.
 pub struct HalaLogicalDevice {
   pub raw: ash::Device,
-  pub debug_utils_loader: ash::ext::debug_utils::Device,
+  pub debug_utils_loader: Option<ash::ext::debug_utils::Device>,
   pub mesh_shader_loader: ash::ext::mesh_shader::Device,
   pub graphics_queue_family_index: u32,
   pub transfer_queue_family_index: u32,
@@ -130,7 +130,11 @@ impl HalaLogicalDevice {
     Ok(
       Self {
         raw: logical_device.clone(),
-        debug_utils_loader: ash::ext::debug_utils::Device::new(&instance.raw, &logical_device),
+        debug_utils_loader: if cfg!(debug_assertions) {
+          Some(ash::ext::debug_utils::Device::new(&instance.raw, &logical_device))
+        } else {
+          None
+        },
         mesh_shader_loader: ash::ext::mesh_shader::Device::new(&instance.raw, &logical_device),
         graphics_queue_family_index,
         transfer_queue_family_index,
@@ -199,8 +203,10 @@ impl HalaLogicalDevice {
       .object_handle(handle)
       .object_name(&name);
     unsafe {
-      self.debug_utils_loader.set_debug_utils_object_name(&info)
-        .map_err(|err| HalaGfxError::new("Failed to set debug name.", Some(Box::new(err))))?;
+      if let Some(debug_utils_loader) = &self.debug_utils_loader {
+        debug_utils_loader.set_debug_utils_object_name(&info)
+          .map_err(|err| HalaGfxError::new("Failed to set debug name.", Some(Box::new(err))))?;
+      }
     }
     Ok(())
   }
@@ -495,9 +501,14 @@ impl HalaLogicalDevice {
       ash::khr::maintenance2::NAME.as_ptr(),
       ash::khr::maintenance3::NAME.as_ptr(),
       ash::khr::maintenance4::NAME.as_ptr(),
+      ash::khr::maintenance5::NAME.as_ptr(),
+      ash::khr::maintenance6::NAME.as_ptr(),
       ash::ext::descriptor_indexing::NAME.as_ptr(),
       ash::khr::synchronization2::NAME.as_ptr(),
       ash::khr::shader_float_controls::NAME.as_ptr(),
+      ash::khr::shader_atomic_int64::NAME.as_ptr(),
+      ash::ext::shader_atomic_float::NAME.as_ptr(),
+      ash::ext::shader_image_atomic_int64::NAME.as_ptr(),
       // ash::khr::shader_float_controls2::NAME.as_ptr(), // This extension is cause nSight stop working.
       ash::khr::buffer_device_address::NAME.as_ptr(),
     ];

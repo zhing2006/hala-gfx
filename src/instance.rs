@@ -29,15 +29,21 @@ pub struct HalaInstance {
   pub(crate) entry: ash::Entry,
   pub raw: ash::Instance,
 
-  pub(crate) debug_utils_loader: ash::ext::debug_utils::Instance,
-  pub(crate) debug_call_back: vk::DebugUtilsMessengerEXT,
+  pub(crate) debug_utils_loader: Option<ash::ext::debug_utils::Instance>,
+  pub(crate) debug_call_back: Option<vk::DebugUtilsMessengerEXT>,
 }
 
 /// The Drop trait implementation of the instance.
 impl Drop for HalaInstance {
   fn drop(&mut self) {
     unsafe {
-      self.debug_utils_loader.destroy_debug_utils_messenger(self.debug_call_back, None);
+      if let Some(debug_call_back) = self.debug_call_back {
+        if let Some(debug_utils_loader) = self.debug_utils_loader.as_ref() {
+          debug_utils_loader.destroy_debug_utils_messenger(debug_call_back, None);
+        }
+      }
+      self.debug_call_back = None;
+      self.debug_utils_loader = None;
       self.raw.destroy_instance(None);
     }
     log::debug!("A HalaInstance is dropped.");
@@ -76,7 +82,18 @@ impl HalaInstance {
   /// param gpu_req: The GPU requirements.
   /// param entry: The Vulkan entry.
   /// return: The debug utils loader, the debug call back, and the instance.
-  fn create_instance(name: &str, gpu_req: &crate::HalaGPURequirements, entry: &ash::Entry) -> Result<(ash::ext::debug_utils::Instance, vk::DebugUtilsMessengerEXT, ash::Instance), HalaGfxError> {
+  fn create_instance(
+    name: &str,
+    gpu_req: &crate::HalaGPURequirements,
+    entry: &ash::Entry
+  ) -> Result<
+    (
+      Option<ash::ext::debug_utils::Instance>,
+      Option<vk::DebugUtilsMessengerEXT>,
+      ash::Instance
+    ),
+    HalaGfxError
+  > {
     let (debug_utils_loader, debug_call_back, instance) = unsafe {
       let app_name = CString::new(name)
         .map_err(|err| HalaGfxError::new("Failed to create CString app_name.", Some(Box::new(err))))?;
@@ -120,8 +137,7 @@ impl HalaInstance {
         vec![]
       };
       let layer_name_ptrs = layer_names.iter().map(|layer_name| layer_name.as_ptr()).collect::<Vec<_>>();
-      let extension_name_ptrs = vec![
-        ash::ext::debug_utils::NAME.as_ptr(),
+      let mut extension_name_ptrs = vec![
         ash::khr::surface::NAME.as_ptr(),
         // If this windows.
         #[cfg(target_os = "windows")]
@@ -137,6 +153,9 @@ impl HalaInstance {
         #[cfg(target_os = "macos")]
         ash::mvk::macos_surface::NAME.as_ptr(),
       ];
+      if cfg!(debug_assertions) {
+        extension_name_ptrs.push(ash::ext::debug_utils::NAME.as_ptr());
+      }
 
       let validation_feature_enables = vec![vk::ValidationFeatureEnableEXT::DEBUG_PRINTF];
       let mut validation_features = vk::ValidationFeaturesEXT::default()
@@ -157,12 +176,18 @@ impl HalaInstance {
       let instance = entry.create_instance(&instance_create_info, None)
         .map_err(|err| HalaGfxError::new("Failed to create Vulkan instance.", Some(Box::new(err))))?;
 
-      let debug_utils_loader = ash::ext::debug_utils::Instance::new(entry, &instance);
-      let debug_call_back = debug_utils_loader
-        .create_debug_utils_messenger(&debug_create_info, None)
-        .map_err(|err| HalaGfxError::new("Failed to create Vulkan debug utils messenger.", Some(Box::new(err))))?;
+      let debug_obj = if cfg!(debug_assertions) {
+        let debug_utils_loader = ash::ext::debug_utils::Instance::new(entry, &instance);
+        let debug_call_back = debug_utils_loader
+          .create_debug_utils_messenger(&debug_create_info, None)
+          .map_err(|err| HalaGfxError::new("Failed to create Vulkan debug utils messenger.", Some(Box::new(err))))?;
 
-      (debug_utils_loader, debug_call_back, instance)
+        (Some(debug_utils_loader), Some(debug_call_back))
+      } else {
+        (None, None)
+      };
+
+      (debug_obj.0, debug_obj.1, instance)
     };
     Ok((debug_utils_loader, debug_call_back, instance))
   }
