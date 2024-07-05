@@ -494,24 +494,28 @@ impl HalaLogicalDevice {
           .queue_priorities(&priorities)
       );
     }
-    let mut extension_name_ptrs = vec![
+    let mut extension_name_ptrs =  vec![
       ash::khr::spirv_1_4::NAME.as_ptr(),
       ash::khr::swapchain::NAME.as_ptr(),
       ash::khr::maintenance1::NAME.as_ptr(),
       ash::khr::maintenance2::NAME.as_ptr(),
       ash::khr::maintenance3::NAME.as_ptr(),
       ash::khr::maintenance4::NAME.as_ptr(),
-      ash::khr::maintenance5::NAME.as_ptr(),
-      ash::khr::maintenance6::NAME.as_ptr(),
       ash::ext::descriptor_indexing::NAME.as_ptr(),
       ash::khr::synchronization2::NAME.as_ptr(),
       ash::khr::shader_float_controls::NAME.as_ptr(),
       ash::khr::shader_atomic_int64::NAME.as_ptr(),
       ash::ext::shader_atomic_float::NAME.as_ptr(),
       ash::ext::shader_image_atomic_int64::NAME.as_ptr(),
-      // ash::khr::shader_float_controls2::NAME.as_ptr(), // This extension is cause nSight stop working.
       ash::khr::buffer_device_address::NAME.as_ptr(),
     ];
+    if !cfg!(debug_assertions) {
+      // These extensions are cause nSight stop working.
+      // So only enable them in release mode.
+      extension_name_ptrs.push(ash::khr::maintenance5::NAME.as_ptr());
+      extension_name_ptrs.push(ash::khr::maintenance6::NAME.as_ptr());
+      extension_name_ptrs.push(ash::khr::shader_float_controls2::NAME.as_ptr());
+    };
     if gpu_req.require_mesh_shader {
       extension_name_ptrs.push(ash::ext::mesh_shader::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::fragment_shading_rate::NAME.as_ptr());

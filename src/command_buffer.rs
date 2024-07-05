@@ -129,6 +129,7 @@ impl Drop for HalaCommandBufferSet {
 
 /// The implementation of the command buffer set.
 impl HalaCommandBufferSet {
+
   /// Create a new command buffer set.
   /// param logical_device: The logical device.
   /// param command_pools: The command pools.
@@ -1516,4 +1517,43 @@ impl HalaCommandBufferSet {
       );
     }
   }
+
+  /// Begin a debug label.
+  /// param index: The index of the command buffer.
+  /// param name: The name of the label.
+  /// param color: The color of the label.
+  pub fn begin_debug_label(
+    &self,
+    index: usize,
+    name: &str,
+    color: [f32; 4],
+  ) {
+    let name = std::ffi::CString::new(name).unwrap();
+    let logical_device = self.logical_device.borrow();
+    let label = vk::DebugUtilsLabelEXT::default()
+      .label_name(&name)
+      .color(color);
+    unsafe {
+      if let Some(debug_utils_loader) = &logical_device.debug_utils_loader {
+        debug_utils_loader.cmd_begin_debug_utils_label(
+          self.raw[index],
+          &label,
+        )
+      }
+    }
+  }
+
+  /// End a debug label.
+  /// param index: The index of the command buffer.
+  pub fn end_debug_label(&self, index: usize) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      if let Some(debug_utils_loader) = &logical_device.debug_utils_loader {
+        debug_utils_loader.cmd_end_debug_utils_label(
+          self.raw[index],
+        )
+      }
+    }
+  }
+
 }
