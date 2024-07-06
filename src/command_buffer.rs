@@ -570,7 +570,7 @@ impl HalaCommandBufferSet {
 
   /// Set the stencil opertions.
   /// param index: The index of the command buffer.
-  /// param face_mask: The face mask.
+  /// param face_mask: The face flags.
   /// param fail_op: The fail operation.
   /// param pass_op: The pass operation.
   /// param depth_fail_op: The depth fail operation.
@@ -593,7 +593,40 @@ impl HalaCommandBufferSet {
         pass_op.into(),
         depth_fail_op.into(),
         compare_op.into(),
-      )
+      );
+    }
+  }
+
+  /// Set the stencil compare mask.
+  /// param index: The index of the command buffer.
+  /// param face_mask: The face flags.
+  /// param compare_mask: The compare mask.
+  pub fn set_stencil_compare_mask(&self, index: usize, face_mask: crate::HalaStencilFaceFlags, compare_mask: u32) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.raw.cmd_set_stencil_compare_mask(self.raw[index], face_mask.into(), compare_mask);
+    }
+  }
+
+  /// Set the stencil write mask.
+  /// param index: The index of the command buffer.
+  /// param face_mask: The face flags.
+  /// param write_mask: The write mask.
+  pub fn set_stencil_write_mask(&self, index: usize, face_mask: crate::HalaStencilFaceFlags, write_mask: u32) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.raw.cmd_set_stencil_write_mask(self.raw[index], face_mask.into(), write_mask);
+    }
+  }
+
+  /// Set the stencil reference.
+  /// param index: The index of the command buffer.
+  /// param face_mask: The face flags.
+  /// param reference: The reference.
+  pub fn set_stencil_reference(&self, index: usize, face_mask: crate::HalaStencilFaceFlags, reference: u32) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.raw.cmd_set_stencil_reference(self.raw[index], face_mask.into(), reference);
     }
   }
 

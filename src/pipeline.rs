@@ -604,6 +604,17 @@ impl AsRef<HalaBlendState> for HalaBlendState {
   }
 }
 
+/// The default implementation for the blend state.
+impl Default for HalaBlendState {
+  fn default() -> Self {
+    Self {
+      src_factor: HalaBlendFactor::ONE,
+      dst_factor: HalaBlendFactor::ZERO,
+      op: HalaBlendOp::ADD,
+    }
+  }
+}
+
 /// The blend state implementation.
 impl HalaBlendState {
 
@@ -633,6 +644,18 @@ pub struct HalaRasterizerState {
 impl AsRef<HalaRasterizerState> for HalaRasterizerState {
   fn as_ref(&self) -> &Self {
     self
+  }
+}
+
+/// The default implementation for the rasterizer state.
+impl Default for HalaRasterizerState {
+  fn default() -> Self {
+    Self {
+      front_face: HalaFrontFace::COUNTER_CLOCKWISE,
+      cull_mode: HalaCullModeFlags::NONE,
+      polygon_mode: HalaPolygonMode::FILL,
+      line_width: 1.0,
+    }
   }
 }
 
@@ -666,6 +689,17 @@ pub struct HalaDepthState {
 impl AsRef<HalaDepthState> for HalaDepthState {
   fn as_ref(&self) -> &Self {
     self
+  }
+}
+
+/// The default implementation for the depth state.
+impl Default for HalaDepthState {
+  fn default() -> Self {
+    Self {
+      test_enable: true,
+      write_enable: true,
+      compare_op: HalaCompareOp::LESS,
+    }
   }
 }
 
@@ -760,6 +794,17 @@ pub struct HalaStencilState {
 impl AsRef<HalaStencilState> for HalaStencilState {
   fn as_ref(&self) -> &Self {
     self
+  }
+}
+
+/// The default implementation for the stencil state.
+impl Default for HalaStencilState {
+  fn default() -> Self {
+    Self {
+      test_enable: false,
+      front: HalaStencilOpState::default(),
+      back: HalaStencilOpState::default(),
+    }
   }
 }
 
