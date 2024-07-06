@@ -590,6 +590,196 @@ impl std::convert::From<HalaDynamicState> for vk::DynamicState {
   }
 }
 
+/// The blend state.
+pub struct HalaBlendState {
+  pub src_factor: HalaBlendFactor,
+  pub dst_factor: HalaBlendFactor,
+  pub op: HalaBlendOp,
+}
+
+/// The blend state implementation.
+impl AsRef<HalaBlendState> for HalaBlendState {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+/// The blend state implementation.
+impl HalaBlendState {
+
+    pub fn new(
+      src_factor: HalaBlendFactor,
+      dst_factor: HalaBlendFactor,
+      op: HalaBlendOp,
+    ) -> Self {
+      Self {
+        src_factor,
+        dst_factor,
+        op,
+      }
+    }
+
+}
+
+/// The rasterizer state.
+pub struct HalaRasterizerState {
+  pub front_face: HalaFrontFace,
+  pub cull_mode: HalaCullModeFlags,
+  pub polygon_mode: HalaPolygonMode,
+  pub line_width: f32,
+}
+
+/// The rasterizer state implementation.
+impl AsRef<HalaRasterizerState> for HalaRasterizerState {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+/// The rasterizer state implementation.
+impl HalaRasterizerState {
+
+  pub fn new(
+    front_face: HalaFrontFace,
+    cull_mode: HalaCullModeFlags,
+    polygon_mode: HalaPolygonMode,
+    line_width: f32,
+  ) -> Self {
+    Self {
+      front_face,
+      cull_mode,
+      polygon_mode,
+      line_width,
+    }
+  }
+
+}
+
+/// The depth state.
+pub struct HalaDepthState {
+  pub test_enable: bool,
+  pub write_enable: bool,
+  pub compare_op: HalaCompareOp,
+}
+
+/// The depth state implementation.
+impl AsRef<HalaDepthState> for HalaDepthState {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+/// The depth state implementation.
+impl HalaDepthState {
+
+  pub fn new(
+    test_enable: bool,
+    write_enable: bool,
+    compare_op: HalaCompareOp,
+  ) -> Self {
+    Self {
+      test_enable,
+      write_enable,
+      compare_op,
+    }
+  }
+
+}
+
+/// The stencil operation state.
+#[derive(Copy, Clone, Default)]
+pub struct HalaStencilOpState {
+  pub fail_op: HalaStencilOp,
+  pub pass_op: HalaStencilOp,
+  pub depth_fail_op: HalaStencilOp,
+  pub compare_op: HalaCompareOp,
+  pub compare_mask: u32,
+  pub write_mask: u32,
+  pub reference: u32,
+}
+
+/// The stencil operation state implementation.
+impl AsRef<HalaStencilOpState> for HalaStencilOpState {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+/// The from implementation for HalaStencilOpState.
+impl std::convert::From<vk::StencilOpState> for HalaStencilOpState {
+  fn from(val: vk::StencilOpState) -> Self {
+    Self::from(&val)
+  }
+}
+
+/// The from implementation for HalaStencilOpState.
+impl std::convert::From<&vk::StencilOpState> for HalaStencilOpState {
+  fn from(val: &vk::StencilOpState) -> Self {
+    Self {
+      fail_op: HalaStencilOp::from(val.fail_op),
+      pass_op: HalaStencilOp::from(val.pass_op),
+      depth_fail_op: HalaStencilOp::from(val.depth_fail_op),
+      compare_op: HalaCompareOp::from(val.compare_op),
+      compare_mask: val.compare_mask,
+      write_mask: val.write_mask,
+      reference: val.reference,
+    }
+  }
+}
+
+/// The from implementation for vk::StencilOpState.
+impl std::convert::From<HalaStencilOpState> for vk::StencilOpState {
+  fn from(val: HalaStencilOpState) -> Self {
+    Self::from(&val)
+  }
+}
+
+/// The from implementation for vk::StencilOpState.
+impl std::convert::From<&HalaStencilOpState> for vk::StencilOpState {
+  fn from(val: &HalaStencilOpState) -> Self {
+    Self {
+      fail_op: vk::StencilOp::from(val.fail_op),
+      pass_op: vk::StencilOp::from(val.pass_op),
+      depth_fail_op: vk::StencilOp::from(val.depth_fail_op),
+      compare_op: vk::CompareOp::from(val.compare_op),
+      compare_mask: val.compare_mask,
+      write_mask: val.write_mask,
+      reference: val.reference,
+    }
+  }
+}
+
+/// The stencil state.
+pub struct HalaStencilState {
+  pub test_enable: bool,
+  pub front: HalaStencilOpState,
+  pub back: HalaStencilOpState,
+}
+
+/// The stencil state implementation.
+impl AsRef<HalaStencilState> for HalaStencilState {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+/// The stencil state implementation.
+impl HalaStencilState {
+
+  pub fn new(
+    test_enable: bool,
+    front: HalaStencilOpState,
+    back: HalaStencilOpState,
+  ) -> Self {
+    Self {
+      test_enable,
+      front,
+      back,
+    }
+  }
+
+}
+
 /// The pipeline base.
 pub(crate) struct HalaPipelineBase;
 impl HalaPipelineBase {
@@ -668,6 +858,7 @@ impl Drop for HalaGraphicsPipeline {
 /// param alpha_blend: The alpha blend(source, destination, operation).
 /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
 /// param depth_info: The depth info(test enable, write enable, compare operation).
+/// param stencil_info: The stencil info(test enable, front, back).
 /// param shaders: The shaders.
 /// param dynamic_states: The dynamic states.
 /// param pipeline_cache: The pipeline cache.
@@ -685,10 +876,11 @@ impl HalaGraphicsPipeline {
     vertex_binding_descriptions: &[VIBD],
     push_constant_ranges: &[PCR],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    alpha_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
-    depth_info: (bool, bool, HalaCompareOp),
+    color_blend: &HalaBlendState,
+    alpha_blend: &HalaBlendState,
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
@@ -718,6 +910,7 @@ impl HalaGraphicsPipeline {
       alpha_blend,
       rasterizer_info,
       depth_info,
+      stencil_info,
       shaders,
       dynamic_states,
       pipeline_cache,
@@ -750,6 +943,7 @@ impl HalaGraphicsPipeline {
   /// alpha_blend: The alpha blend(source, destination, operation).
   /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// depth_info: The depth info(test enable, write enable, compare operation).
+  /// stencil_info: The stencil info(test enable, front, back).
   /// shaders: The shaders.
   /// dynamic_states: The dynamic states.
   /// pipeline_cache: The pipeline cache.
@@ -765,10 +959,11 @@ impl HalaGraphicsPipeline {
     vertex_binding_descriptions: &[VIBD],
     push_constant_ranges: &[PCR],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    alpha_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
-    depth_info: (bool, bool, HalaCompareOp),
+    color_blend: &HalaBlendState,
+    alpha_blend: &HalaBlendState,
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
@@ -800,6 +995,7 @@ impl HalaGraphicsPipeline {
       alpha_blend,
       rasterizer_info,
       depth_info,
+      stencil_info,
       shaders,
       dynamic_states,
       pipeline_cache,
@@ -829,6 +1025,7 @@ impl HalaGraphicsPipeline {
   /// param alpha_blend: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// param depth_info: The depth info(test enable, write enable, compare operation).
+  /// param stencil_info: The stencil info(test enable, front, back).
   /// param shaders: The shaders.
   /// param dynamic_states: The dynamic states.
   /// param pipeline_cache: The pipeline cache.
@@ -842,10 +1039,11 @@ impl HalaGraphicsPipeline {
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    alpha_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
-    depth_info: (bool, bool, HalaCompareOp),
+    color_blend: &HalaBlendState,
+    alpha_blend: &HalaBlendState,
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
@@ -887,22 +1085,22 @@ impl HalaGraphicsPipeline {
       .scissors(&scissors);
 
     let rasterizer_info = vk::PipelineRasterizationStateCreateInfo::default()
-      .line_width(rasterizer_info.0)
-      .front_face(rasterizer_info.1.into())
-      .cull_mode(rasterizer_info.2.into())
-      .polygon_mode(rasterizer_info.3.into());
+      .line_width(rasterizer_info.line_width)
+      .front_face(rasterizer_info.front_face.into())
+      .cull_mode(rasterizer_info.cull_mode.into())
+      .polygon_mode(rasterizer_info.polygon_mode.into());
 
     let multisampler_info = vk::PipelineMultisampleStateCreateInfo::default()
       .rasterization_samples(vk::SampleCountFlags::TYPE_1);
 
     let colourblend_attachments = [vk::PipelineColorBlendAttachmentState::default()
       .blend_enable(true)
-      .src_color_blend_factor(color_blend.0.into())
-      .dst_color_blend_factor(color_blend.1.into())
-      .color_blend_op(color_blend.2.into())
-      .src_alpha_blend_factor(alpha_blend.0.into())
-      .dst_alpha_blend_factor(alpha_blend.1.into())
-      .alpha_blend_op(alpha_blend.2.into())
+      .src_color_blend_factor(color_blend.src_factor.into())
+      .dst_color_blend_factor(color_blend.dst_factor.into())
+      .color_blend_op(color_blend.op.into())
+      .src_alpha_blend_factor(alpha_blend.src_factor.into())
+      .dst_alpha_blend_factor(alpha_blend.dst_factor.into())
+      .alpha_blend_op(alpha_blend.op.into())
       .color_write_mask(
         vk::ColorComponentFlags::R | vk::ColorComponentFlags::G | vk::ColorComponentFlags::B | vk::ColorComponentFlags::A,
       )];
@@ -957,14 +1155,26 @@ impl HalaGraphicsPipeline {
       .subpass(0);
 
     let graphics_pipeline = if swapchain.depth_stencil_format != vk::Format::UNDEFINED {
-      let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::default()
-        .depth_test_enable(depth_info.0)
-        .depth_write_enable(depth_info.1)
-        .depth_compare_op(depth_info.2.into())
-        .depth_bounds_test_enable(false)
-        .stencil_test_enable(false)
-        .front(Default::default())
-        .back(Default::default());
+      let depth_stencil_info = if !swapchain.has_stencil {
+        vk::PipelineDepthStencilStateCreateInfo::default()
+          .depth_test_enable(depth_info.test_enable)
+          .depth_write_enable(depth_info.write_enable)
+          .depth_compare_op(depth_info.compare_op.into())
+          .depth_bounds_test_enable(false)
+          .stencil_test_enable(false)
+          .front(Default::default())
+          .back(Default::default())
+        } else {
+          let stencil_info = stencil_info.ok_or(HalaGfxError::new("Stencil info is required.", None))?;
+          vk::PipelineDepthStencilStateCreateInfo::default()
+            .depth_test_enable(depth_info.test_enable)
+            .depth_write_enable(depth_info.write_enable)
+            .depth_compare_op(depth_info.compare_op.into())
+            .depth_bounds_test_enable(false)
+            .stencil_test_enable(stencil_info.test_enable)
+            .front(stencil_info.front.into())
+            .back(stencil_info.back.into())
+        };
       let pipelines = unsafe {
         logical_device.borrow().raw
           .create_graphics_pipelines(
@@ -1008,6 +1218,7 @@ impl HalaGraphicsPipeline {
   /// param alpha_blend: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// param depth_info: The depth info(test enable, write enable, compare operation).
+  /// param stencil_info: The stencil info(test enable, front, back).
   /// param shaders: The shaders.
   /// param dynamic_states: The dynamic states.
   /// param pipeline_cache: The pipeline cache.
@@ -1022,10 +1233,11 @@ impl HalaGraphicsPipeline {
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    alpha_blend: (HalaBlendFactor, HalaBlendFactor, HalaBlendOp),
-    rasterizer_info: (f32, HalaFrontFace, HalaCullModeFlags, HalaPolygonMode),
-    depth_info: (bool, bool, HalaCompareOp),
+    color_blend: &HalaBlendState,
+    alpha_blend: &HalaBlendState,
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
@@ -1071,22 +1283,22 @@ impl HalaGraphicsPipeline {
       .scissors(&scissors);
 
     let rasterizer_info = vk::PipelineRasterizationStateCreateInfo::default()
-      .line_width(rasterizer_info.0)
-      .front_face(rasterizer_info.1.into())
-      .cull_mode(rasterizer_info.2.into())
-      .polygon_mode(rasterizer_info.3.into());
+      .line_width(rasterizer_info.line_width)
+      .front_face(rasterizer_info.front_face.into())
+      .cull_mode(rasterizer_info.cull_mode.into())
+      .polygon_mode(rasterizer_info.polygon_mode.into());
 
     let multisampler_info = vk::PipelineMultisampleStateCreateInfo::default()
       .rasterization_samples(vk::SampleCountFlags::TYPE_1);
 
     let colourblend_attachments = [vk::PipelineColorBlendAttachmentState::default()
       .blend_enable(true)
-      .src_color_blend_factor(color_blend.0.into())
-      .dst_color_blend_factor(color_blend.1.into())
-      .color_blend_op(color_blend.2.into())
-      .src_alpha_blend_factor(alpha_blend.0.into())
-      .dst_alpha_blend_factor(alpha_blend.1.into())
-      .alpha_blend_op(alpha_blend.2.into())
+      .src_color_blend_factor(color_blend.src_factor.into())
+      .dst_color_blend_factor(color_blend.dst_factor.into())
+      .color_blend_op(color_blend.op.into())
+      .src_alpha_blend_factor(alpha_blend.src_factor.into())
+      .dst_alpha_blend_factor(alpha_blend.dst_factor.into())
+      .alpha_blend_op(alpha_blend.op.into())
       .color_write_mask(
         vk::ColorComponentFlags::R | vk::ColorComponentFlags::G | vk::ColorComponentFlags::B | vk::ColorComponentFlags::A,
       )];
@@ -1145,14 +1357,26 @@ impl HalaGraphicsPipeline {
       .subpass(0);
 
     let graphics_pipeline = if has_depth {
-      let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::default()
-        .depth_test_enable(depth_info.0)
-        .depth_write_enable(depth_info.1)
-        .depth_compare_op(depth_info.2.into())
-        .depth_bounds_test_enable(false)
-        .stencil_test_enable(false)
-        .front(Default::default())
-        .back(Default::default());
+      let depth_stencil_info = if !has_stencil {
+        vk::PipelineDepthStencilStateCreateInfo::default()
+          .depth_test_enable(depth_info.test_enable)
+          .depth_write_enable(depth_info.write_enable)
+          .depth_compare_op(depth_info.compare_op.into())
+          .depth_bounds_test_enable(false)
+          .stencil_test_enable(false)
+          .front(Default::default())
+          .back(Default::default())
+      } else {
+        let stencil_info = stencil_info.ok_or(HalaGfxError::new("Stencil info is required.", None))?;
+        vk::PipelineDepthStencilStateCreateInfo::default()
+          .depth_test_enable(depth_info.test_enable)
+          .depth_write_enable(depth_info.write_enable)
+          .depth_compare_op(depth_info.compare_op.into())
+          .depth_bounds_test_enable(false)
+          .stencil_test_enable(stencil_info.test_enable)
+          .front(stencil_info.front.into())
+          .back(stencil_info.back.into())
+      };
       let pipelines = unsafe {
         logical_device.borrow().raw
           .create_graphics_pipelines(
