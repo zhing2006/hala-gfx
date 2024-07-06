@@ -60,6 +60,7 @@ pub use crate::buffer::{
 pub use crate::descriptor_set::{
   HalaDescriptorType,
   HalaDescriptorBindingFlags,
+  HalaDescriptorSetLayoutBinding,
   HalaDescriptorSetLayout,
   HalaDescriptorSet,
 };

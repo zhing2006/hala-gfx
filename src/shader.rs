@@ -1,6 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use serde::{Serialize, Deserialize};
+
 use ash::vk;
 
 use crate::{
@@ -9,7 +11,7 @@ use crate::{
 };
 
 /// The shader stage.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct HalaShaderStageFlags(u32);
 crate::hala_bitflags_wrapped!(HalaShaderStageFlags, u32);
 impl HalaShaderStageFlags {
@@ -44,7 +46,7 @@ impl std::convert::From<HalaShaderStageFlags> for vk::ShaderStageFlags {
 }
 
 /// The ray tracing shader group type.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
 pub struct HalaRayTracingShaderGroupType(i32);
 impl HalaRayTracingShaderGroupType {
   pub const GENERAL: Self = Self(vk::RayTracingShaderGroupTypeKHR::GENERAL.as_raw());

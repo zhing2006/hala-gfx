@@ -63,6 +63,50 @@ impl std::convert::From<HalaDescriptorBindingFlags> for vk::DescriptorBindingFla
   }
 }
 
+/// The descriptor set layout binding.
+pub struct HalaDescriptorSetLayoutBinding {
+  pub binding_index: u32,
+  pub descriptor_type: HalaDescriptorType,
+  pub descriptor_count: u32,
+  pub stage_flags: HalaShaderStageFlags,
+  pub binding_flags: HalaDescriptorBindingFlags,
+}
+
+/// The AsRef trait implementation of the descriptor set layout binding.
+impl AsRef<HalaDescriptorSetLayoutBinding> for HalaDescriptorSetLayoutBinding {
+  fn as_ref(&self) -> &HalaDescriptorSetLayoutBinding {
+    self
+  }
+}
+
+/// The implementation of the descriptor set layout binding.
+impl HalaDescriptorSetLayoutBinding {
+
+  /// Create a new descriptor set layout binding.
+  /// param binding_index: The binding index.
+  /// param descriptor_type: The descriptor type.
+  /// param descriptor_count: The descriptor count.
+  /// param stage_flags: The stage flags.
+  /// param binding_flags: The binding flags.
+  /// return: The descriptor set layout binding.
+  pub fn new(
+    binding_index: u32,
+    descriptor_type: HalaDescriptorType,
+    descriptor_count: u32,
+    stage_flags: HalaShaderStageFlags,
+    binding_flags: HalaDescriptorBindingFlags,
+  ) -> Self {
+    Self {
+      binding_index,
+      descriptor_type,
+      descriptor_count,
+      stage_flags,
+      binding_flags,
+    }
+  }
+
+}
+
 /// The descriptor set layout.
 pub struct HalaDescriptorSetLayout {
   pub(crate) logical_device: Rc<RefCell<HalaLogicalDevice>>,
@@ -95,20 +139,22 @@ impl HalaDescriptorSetLayout {
   /// param bindings: The bindings(binding, description type, count, stage flags, binding flags).
   /// param debug_name: The debug name.
   /// return: The descriptor set layout.
-  pub fn new(
+  pub fn new<DSLB>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
-    bindings: &[(u32, HalaDescriptorType, u32, HalaShaderStageFlags, HalaDescriptorBindingFlags)],
+    bindings: &[DSLB],
     debug_name: &str,
-  ) -> Result<Self, HalaGfxError> {
+  ) -> Result<Self, HalaGfxError>
+  where DSLB: AsRef<HalaDescriptorSetLayoutBinding>
+  {
     let mut descriptor_set_layout_bindings = Vec::new();
     let mut descriptor_set_layout_bindings_flags = Vec::new();
-    for (binding, descriptor_type, count, stage_flags, binding_flags) in bindings {
+    for binding in bindings {
       descriptor_set_layout_bindings.push(vk::DescriptorSetLayoutBinding::default()
-        .binding(*binding)
-        .descriptor_type(vk::DescriptorType::from(*descriptor_type))
-        .descriptor_count(*count)
-        .stage_flags(vk::ShaderStageFlags::from(*stage_flags)));
-      descriptor_set_layout_bindings_flags.push(vk::DescriptorBindingFlags::from(*binding_flags));
+        .binding(binding.as_ref().binding_index)
+        .descriptor_type(vk::DescriptorType::from(binding.as_ref().descriptor_type))
+        .descriptor_count(binding.as_ref().descriptor_count)
+        .stage_flags(vk::ShaderStageFlags::from(binding.as_ref().stage_flags)));
+      descriptor_set_layout_bindings_flags.push(vk::DescriptorBindingFlags::from(binding.as_ref().binding_flags));
     }
 
     let mut binding_flags_create_info = vk::DescriptorSetLayoutBindingFlagsCreateInfo::default()
