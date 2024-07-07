@@ -1446,7 +1446,7 @@ impl HalaGraphicsPipeline {
   /// pipeline_cache: The pipeline cache.
   /// debug_name: The debug name.
   /// return: The graphics pipeline.
-  pub fn new_with_rt<T, DSL, VIAD, VIBD, PCR, S>(
+  pub fn with_rt<T, DSL, VIAD, VIBD, PCR, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
     depth_image: Option<&T>,
