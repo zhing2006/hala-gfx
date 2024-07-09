@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::fmt;
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::{self, Unexpected, Visitor};
@@ -186,7 +187,7 @@ impl std::convert::From<HalaVertexInputRate> for vk::VertexInputRate {
 }
 
 /// The primitive topology.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaPrimitiveTopology(i32);
 impl HalaPrimitiveTopology {
   pub const POINT_LIST: Self = Self(vk::PrimitiveTopology::POINT_LIST.as_raw());
@@ -214,8 +215,83 @@ impl std::convert::From<HalaPrimitiveTopology> for vk::PrimitiveTopology {
   }
 }
 
+impl Serialize for HalaPrimitiveTopology {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaPrimitiveTopology::POINT_LIST => "point_list",
+      HalaPrimitiveTopology::LINE_LIST => "list_list",
+      HalaPrimitiveTopology::LINE_STRIP => "line_strip",
+      HalaPrimitiveTopology::TRIANGLE_LIST => "triangle_list",
+      HalaPrimitiveTopology::TRIANGLE_STRIP => "triangle_strip",
+      HalaPrimitiveTopology::TRIANGLE_FAN => "triangle_fan",
+      HalaPrimitiveTopology::LINE_LIST_WITH_ADJACENCY => "line_list_with_adjacency",
+      HalaPrimitiveTopology::LINE_STRIP_WITH_ADJACENCY => "line_strip_with_adjacency",
+      HalaPrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY => "triangle_list_with_adjacency",
+      HalaPrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY => "triangle_strip_with_adjacency",
+      HalaPrimitiveTopology::PATCH_LIST => "patch_list",
+      _ => "default",
+    };
+
+    serializer.serialize_str(s)
+  }
+}
+
+impl<'de> Deserialize<'de> for HalaPrimitiveTopology {
+  fn deserialize<D>(deserializer: D) -> Result<HalaPrimitiveTopology, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaPrimitiveTopologyVisitor;
+
+    impl<'de> Visitor<'de> for HalaPrimitiveTopologyVisitor {
+      type Value = HalaPrimitiveTopology;
+
+      fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a string of primitive topology")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaPrimitiveTopology, E>
+      where
+        E: de::Error,
+      {
+        match value {
+          "POINT_LIST" => Ok(HalaPrimitiveTopology::POINT_LIST),
+          "point_list" => Ok(HalaPrimitiveTopology::POINT_LIST),
+          "LINE_LIST" => Ok(HalaPrimitiveTopology::LINE_LIST),
+          "line_list" => Ok(HalaPrimitiveTopology::LINE_LIST),
+          "LINE_STRIP" => Ok(HalaPrimitiveTopology::LINE_STRIP),
+          "line_strip" => Ok(HalaPrimitiveTopology::LINE_STRIP),
+          "TRIANGLE_LIST" => Ok(HalaPrimitiveTopology::TRIANGLE_LIST),
+          "triangle_list" => Ok(HalaPrimitiveTopology::TRIANGLE_LIST),
+          "TRIANGLE_STRIP" => Ok(HalaPrimitiveTopology::TRIANGLE_STRIP),
+          "triangle_strip" => Ok(HalaPrimitiveTopology::TRIANGLE_STRIP),
+          "TRIANGLE_FAN" => Ok(HalaPrimitiveTopology::TRIANGLE_FAN),
+          "triangle_fan" => Ok(HalaPrimitiveTopology::TRIANGLE_FAN),
+          "LINE_LIST_WITH_ADJACENCY" => Ok(HalaPrimitiveTopology::LINE_LIST_WITH_ADJACENCY),
+          "line_list_with_adjacency" => Ok(HalaPrimitiveTopology::LINE_LIST_WITH_ADJACENCY),
+          "LINE_STRIP_WITH_ADJACENCY" => Ok(HalaPrimitiveTopology::LINE_STRIP_WITH_ADJACENCY),
+          "line_strip_with_adjacency" => Ok(HalaPrimitiveTopology::LINE_STRIP_WITH_ADJACENCY),
+          "TRIANGLE_LIST_WITH_ADJACENCY" => Ok(HalaPrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY),
+          "triangle_list_with_adjacency" => Ok(HalaPrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY),
+          "TRIANGLE_STRIP_WITH_ADJACENCY" => Ok(HalaPrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY),
+          "triangle_strip_with_adjacency" => Ok(HalaPrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY),
+          "PATCH_LIST" => Ok(HalaPrimitiveTopology::PATCH_LIST),
+          "patch_list" => Ok(HalaPrimitiveTopology::PATCH_LIST),
+          "default" => Ok(HalaPrimitiveTopology::default()),
+                  _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a primitive topology")),
+        }
+      }
+    }
+
+    deserializer.deserialize_str(HalaPrimitiveTopologyVisitor)
+  }
+}
+
 /// The blend factor.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaBlendFactor(i32);
 impl HalaBlendFactor {
   pub const ZERO: Self = Self(vk::BlendFactor::ZERO.as_raw());
@@ -239,101 +315,105 @@ impl HalaBlendFactor {
   pub const ONE_MINUS_SRC1_ALPHA: Self = Self(vk::BlendFactor::ONE_MINUS_SRC1_ALPHA.as_raw());
 }
 
-fn blend_factor_serialize<S>(value: &HalaBlendFactor, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaBlendFactor::ZERO => "zero",
-    HalaBlendFactor::ONE => "one",
-    HalaBlendFactor::SRC_COLOR => "src_color",
-    HalaBlendFactor::ONE_MINUS_SRC_COLOR => "one_minus_src_color",
-    HalaBlendFactor::DST_COLOR => "dst_color",
-    HalaBlendFactor::ONE_MINUS_DST_COLOR => "one_minus_dst_color",
-    HalaBlendFactor::SRC_ALPHA => "src_alpha",
-    HalaBlendFactor::ONE_MINUS_SRC_ALPHA => "one_minus_src_alpha",
-    HalaBlendFactor::DST_ALPHA => "dst_alpha",
-    HalaBlendFactor::ONE_MINUS_DST_ALPHA => "one_minus_dst_alpha",
-    HalaBlendFactor::CONSTANT_COLOR => "constant_color",
-    HalaBlendFactor::ONE_MINUS_CONSTANT_COLOR => "one_minus_constant_color",
-    HalaBlendFactor::CONSTANT_ALPHA => "constant_alpha",
-    HalaBlendFactor::ONE_MINUS_CONSTANT_ALPHA => "one_minus_constant_alpha",
-    HalaBlendFactor::SRC_ALPHA_SATURATE => "src_alpha_saturate",
-    HalaBlendFactor::SRC1_COLOR => "src1_color",
-    HalaBlendFactor::ONE_MINUS_SRC1_COLOR => "one_minus_src1_color",
-    HalaBlendFactor::SRC1_ALPHA => "src1_alpha",
-    HalaBlendFactor::ONE_MINUS_SRC1_ALPHA => "one_minus_src1_alpha",
-    _ => "default",
-  };
+impl Serialize for HalaBlendFactor {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaBlendFactor::ZERO => "zero",
+      HalaBlendFactor::ONE => "one",
+      HalaBlendFactor::SRC_COLOR => "src_color",
+      HalaBlendFactor::ONE_MINUS_SRC_COLOR => "one_minus_src_color",
+      HalaBlendFactor::DST_COLOR => "dst_color",
+      HalaBlendFactor::ONE_MINUS_DST_COLOR => "one_minus_dst_color",
+      HalaBlendFactor::SRC_ALPHA => "src_alpha",
+      HalaBlendFactor::ONE_MINUS_SRC_ALPHA => "one_minus_src_alpha",
+      HalaBlendFactor::DST_ALPHA => "dst_alpha",
+      HalaBlendFactor::ONE_MINUS_DST_ALPHA => "one_minus_dst_alpha",
+      HalaBlendFactor::CONSTANT_COLOR => "constant_color",
+      HalaBlendFactor::ONE_MINUS_CONSTANT_COLOR => "one_minus_constant_color",
+      HalaBlendFactor::CONSTANT_ALPHA => "constant_alpha",
+      HalaBlendFactor::ONE_MINUS_CONSTANT_ALPHA => "one_minus_constant_alpha",
+      HalaBlendFactor::SRC_ALPHA_SATURATE => "src_alpha_saturate",
+      HalaBlendFactor::SRC1_COLOR => "src1_color",
+      HalaBlendFactor::ONE_MINUS_SRC1_COLOR => "one_minus_src1_color",
+      HalaBlendFactor::SRC1_ALPHA => "src1_alpha",
+      HalaBlendFactor::ONE_MINUS_SRC1_ALPHA => "one_minus_src1_alpha",
+      _ => "default",
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn blend_factor_deserialize<'de, D>(deserializer: D) -> Result<HalaBlendFactor, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaBlendFactorVisitor;
+impl<'de> Deserialize<'de> for HalaBlendFactor {
+  fn deserialize<D>(deserializer: D) -> Result<HalaBlendFactor, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaBlendFactorVisitor;
 
-  impl<'de> Visitor<'de> for HalaBlendFactorVisitor {
-    type Value = HalaBlendFactor;
+    impl<'de> Visitor<'de> for HalaBlendFactorVisitor {
+      type Value = HalaBlendFactor;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of blend factor")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of blend factor")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaBlendFactor, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "ZERO" => HalaBlendFactor::ZERO,
+          "zero" => HalaBlendFactor::ZERO,
+          "ONE" => HalaBlendFactor::ONE,
+          "one" => HalaBlendFactor::ONE,
+          "SRC_COLOR" => HalaBlendFactor::SRC_COLOR,
+          "src_color" => HalaBlendFactor::SRC_COLOR,
+          "ONE_MINUS_SRC_COLOR" => HalaBlendFactor::ONE_MINUS_SRC_COLOR,
+          "one_minus_src_color" => HalaBlendFactor::ONE_MINUS_SRC_COLOR,
+          "DST_COLOR" => HalaBlendFactor::DST_COLOR,
+          "dst_color" => HalaBlendFactor::DST_COLOR,
+          "ONE_MINUS_DST_COLOR" => HalaBlendFactor::ONE_MINUS_DST_COLOR,
+          "one_minus_dst_color" => HalaBlendFactor::ONE_MINUS_DST_COLOR,
+          "SRC_ALPHA" => HalaBlendFactor::SRC_ALPHA,
+          "src_alpha" => HalaBlendFactor::SRC_ALPHA,
+          "ONE_MINUS_SRC_ALPHA" => HalaBlendFactor::ONE_MINUS_SRC_ALPHA,
+          "one_minus_src_alpha" => HalaBlendFactor::ONE_MINUS_SRC_ALPHA,
+          "DST_ALPHA" => HalaBlendFactor::DST_ALPHA,
+          "dst_alpha" => HalaBlendFactor::DST_ALPHA,
+          "ONE_MINUS_DST_ALPHA" => HalaBlendFactor::ONE_MINUS_DST_ALPHA,
+          "one_minus_dst_alpha" => HalaBlendFactor::ONE_MINUS_DST_ALPHA,
+          "CONSTANT_COLOR" => HalaBlendFactor::CONSTANT_COLOR,
+          "constant_color" => HalaBlendFactor::CONSTANT_COLOR,
+          "ONE_MINUS_CONSTANT_COLOR" => HalaBlendFactor::ONE_MINUS_CONSTANT_COLOR,
+          "one_minus_constant_color" => HalaBlendFactor::ONE_MINUS_CONSTANT_COLOR,
+          "CONSTANT_ALPHA" => HalaBlendFactor::CONSTANT_ALPHA,
+          "constant_alpha" => HalaBlendFactor::CONSTANT_ALPHA,
+          "ONE_MINUS_CONSTANT_ALPHA" => HalaBlendFactor::ONE_MINUS_CONSTANT_ALPHA,
+          "one_minus_constant_alpha" => HalaBlendFactor::ONE_MINUS_CONSTANT_ALPHA,
+          "SRC_ALPHA_SATURATE" => HalaBlendFactor::SRC_ALPHA_SATURATE,
+          "src_alpha_saturate" => HalaBlendFactor::SRC_ALPHA_SATURATE,
+          "SRC1_COLOR" => HalaBlendFactor::SRC1_COLOR,
+          "src1_color" => HalaBlendFactor::SRC1_COLOR,
+          "ONE_MINUS_SRC1_COLOR" => HalaBlendFactor::ONE_MINUS_SRC1_COLOR,
+          "one_minus_src1_color" => HalaBlendFactor::ONE_MINUS_SRC1_COLOR,
+          "SRC1_ALPHA" => HalaBlendFactor::SRC1_ALPHA,
+          "src1_alpha" => HalaBlendFactor::SRC1_ALPHA,
+          "ONE_MINUS_SRC1_ALPHA" => HalaBlendFactor::ONE_MINUS_SRC1_ALPHA,
+          "one_minus_src1_alpha" => HalaBlendFactor::ONE_MINUS_SRC1_ALPHA,
+          "default" => HalaBlendFactor::default(),
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a blend factor")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaBlendFactor, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "ZERO" => HalaBlendFactor::ZERO,
-        "zero" => HalaBlendFactor::ZERO,
-        "ONE" => HalaBlendFactor::ONE,
-        "one" => HalaBlendFactor::ONE,
-        "SRC_COLOR" => HalaBlendFactor::SRC_COLOR,
-        "src_color" => HalaBlendFactor::SRC_COLOR,
-        "ONE_MINUS_SRC_COLOR" => HalaBlendFactor::ONE_MINUS_SRC_COLOR,
-        "one_minus_src_color" => HalaBlendFactor::ONE_MINUS_SRC_COLOR,
-        "DST_COLOR" => HalaBlendFactor::DST_COLOR,
-        "dst_color" => HalaBlendFactor::DST_COLOR,
-        "ONE_MINUS_DST_COLOR" => HalaBlendFactor::ONE_MINUS_DST_COLOR,
-        "one_minus_dst_color" => HalaBlendFactor::ONE_MINUS_DST_COLOR,
-        "SRC_ALPHA" => HalaBlendFactor::SRC_ALPHA,
-        "src_alpha" => HalaBlendFactor::SRC_ALPHA,
-        "ONE_MINUS_SRC_ALPHA" => HalaBlendFactor::ONE_MINUS_SRC_ALPHA,
-        "one_minus_src_alpha" => HalaBlendFactor::ONE_MINUS_SRC_ALPHA,
-        "DST_ALPHA" => HalaBlendFactor::DST_ALPHA,
-        "dst_alpha" => HalaBlendFactor::DST_ALPHA,
-        "ONE_MINUS_DST_ALPHA" => HalaBlendFactor::ONE_MINUS_DST_ALPHA,
-        "one_minus_dst_alpha" => HalaBlendFactor::ONE_MINUS_DST_ALPHA,
-        "CONSTANT_COLOR" => HalaBlendFactor::CONSTANT_COLOR,
-        "constant_color" => HalaBlendFactor::CONSTANT_COLOR,
-        "ONE_MINUS_CONSTANT_COLOR" => HalaBlendFactor::ONE_MINUS_CONSTANT_COLOR,
-        "one_minus_constant_color" => HalaBlendFactor::ONE_MINUS_CONSTANT_COLOR,
-        "CONSTANT_ALPHA" => HalaBlendFactor::CONSTANT_ALPHA,
-        "constant_alpha" => HalaBlendFactor::CONSTANT_ALPHA,
-        "ONE_MINUS_CONSTANT_ALPHA" => HalaBlendFactor::ONE_MINUS_CONSTANT_ALPHA,
-        "one_minus_constant_alpha" => HalaBlendFactor::ONE_MINUS_CONSTANT_ALPHA,
-        "SRC_ALPHA_SATURATE" => HalaBlendFactor::SRC_ALPHA_SATURATE,
-        "src_alpha_saturate" => HalaBlendFactor::SRC_ALPHA_SATURATE,
-        "SRC1_COLOR" => HalaBlendFactor::SRC1_COLOR,
-        "src1_color" => HalaBlendFactor::SRC1_COLOR,
-        "ONE_MINUS_SRC1_COLOR" => HalaBlendFactor::ONE_MINUS_SRC1_COLOR,
-        "one_minus_src1_color" => HalaBlendFactor::ONE_MINUS_SRC1_COLOR,
-        "SRC1_ALPHA" => HalaBlendFactor::SRC1_ALPHA,
-        "src1_alpha" => HalaBlendFactor::SRC1_ALPHA,
-        "ONE_MINUS_SRC1_ALPHA" => HalaBlendFactor::ONE_MINUS_SRC1_ALPHA,
-        "one_minus_src1_alpha" => HalaBlendFactor::ONE_MINUS_SRC1_ALPHA,
-        "default" => HalaBlendFactor::default(),
-        _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a blend factor")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaBlendFactorVisitor)
   }
-
-  deserializer.deserialize_str(HalaBlendFactorVisitor)
 }
 
 impl std::convert::From<vk::BlendFactor> for HalaBlendFactor {
@@ -349,7 +429,7 @@ impl std::convert::From<HalaBlendFactor> for vk::BlendFactor {
 }
 
 /// The blend operation.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaBlendOp(i32);
 impl HalaBlendOp {
   pub const ADD: Self = Self(vk::BlendOp::ADD.as_raw());
@@ -359,59 +439,63 @@ impl HalaBlendOp {
   pub const MAX: Self = Self(vk::BlendOp::MAX.as_raw());
 }
 
-fn blend_op_serialize<S>(value: &HalaBlendOp, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaBlendOp::ADD => "add",
-    HalaBlendOp::SUBTRACT => "subtract",
-    HalaBlendOp::REVERSE_SUBTRACT => "reverse_subtract",
-    HalaBlendOp::MIN => "min",
-    HalaBlendOp::MAX => "max",
-    _ => "default",
-  };
+impl Serialize for HalaBlendOp {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaBlendOp::ADD => "add",
+      HalaBlendOp::SUBTRACT => "subtract",
+      HalaBlendOp::REVERSE_SUBTRACT => "reverse_subtract",
+      HalaBlendOp::MIN => "min",
+      HalaBlendOp::MAX => "max",
+      _ => "default",
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn blend_op_deserialize<'de, D>(deserializer: D) -> Result<HalaBlendOp, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaBlendOpVisitor;
+impl<'de> Deserialize<'de> for HalaBlendOp {
+  fn deserialize<D>(deserializer: D) -> Result<HalaBlendOp, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaBlendOpVisitor;
 
-  impl<'de> Visitor<'de> for HalaBlendOpVisitor {
-    type Value = HalaBlendOp;
+    impl<'de> Visitor<'de> for HalaBlendOpVisitor {
+      type Value = HalaBlendOp;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of blend operation")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of blend operation")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaBlendOp, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "ADD" => HalaBlendOp::ADD,
+          "add" => HalaBlendOp::ADD,
+          "SUBTRACT" => HalaBlendOp::SUBTRACT,
+          "subtract" => HalaBlendOp::SUBTRACT,
+          "REVERSE_SUBTRACT" => HalaBlendOp::REVERSE_SUBTRACT,
+          "reverse_subtract" => HalaBlendOp::REVERSE_SUBTRACT,
+          "MIN" => HalaBlendOp::MIN,
+          "min" => HalaBlendOp::MIN,
+          "MAX" => HalaBlendOp::MAX,
+          "max" => HalaBlendOp::MAX,
+          "default" => HalaBlendOp::default(),
+                  _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a blend operation")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaBlendOp, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "ADD" => HalaBlendOp::ADD,
-        "add" => HalaBlendOp::ADD,
-        "SUBTRACT" => HalaBlendOp::SUBTRACT,
-        "subtract" => HalaBlendOp::SUBTRACT,
-        "REVERSE_SUBTRACT" => HalaBlendOp::REVERSE_SUBTRACT,
-        "reverse_subtract" => HalaBlendOp::REVERSE_SUBTRACT,
-        "MIN" => HalaBlendOp::MIN,
-        "min" => HalaBlendOp::MIN,
-        "MAX" => HalaBlendOp::MAX,
-        "max" => HalaBlendOp::MAX,
-        "default" => HalaBlendOp::default(),
-                _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a blend operation")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaBlendOpVisitor)
   }
-
-  deserializer.deserialize_str(HalaBlendOpVisitor)
 }
 
 impl std::convert::From<vk::BlendOp> for HalaBlendOp {
@@ -427,57 +511,61 @@ impl std::convert::From<HalaBlendOp> for vk::BlendOp {
 }
 
 /// The front face.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaFrontFace(i32);
 impl HalaFrontFace {
   pub const COUNTER_CLOCKWISE: Self = Self(vk::FrontFace::COUNTER_CLOCKWISE.as_raw());
   pub const CLOCKWISE: Self = Self(vk::FrontFace::CLOCKWISE.as_raw());
 }
 
-fn front_face_serialize<S>(value: &HalaFrontFace, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaFrontFace::COUNTER_CLOCKWISE => "counter_clockwise",
-    HalaFrontFace::CLOCKWISE => "clockwise",
-    _ => "default",
-  };
+impl Serialize for HalaFrontFace {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaFrontFace::COUNTER_CLOCKWISE => "counter_clockwise",
+      HalaFrontFace::CLOCKWISE => "clockwise",
+      _ => "default",
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn front_face_deserialize<'de, D>(deserializer: D) -> Result<HalaFrontFace, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaFrontFaceVisitor;
+impl<'de> Deserialize<'de> for HalaFrontFace {
+  fn deserialize<D>(deserializer: D) -> Result<HalaFrontFace, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaFrontFaceVisitor;
 
-  impl<'de> Visitor<'de> for HalaFrontFaceVisitor {
-    type Value = HalaFrontFace;
+    impl<'de> Visitor<'de> for HalaFrontFaceVisitor {
+      type Value = HalaFrontFace;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of front face")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of front face")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaFrontFace, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "COUNTER_CLOCKWISE" => HalaFrontFace::COUNTER_CLOCKWISE,
+          "counter_clockwise" => HalaFrontFace::COUNTER_CLOCKWISE,
+          "CLOCKWISE" => HalaFrontFace::CLOCKWISE,
+          "clockwise" => HalaFrontFace::CLOCKWISE,
+          "default" => HalaFrontFace::default(),
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a front face")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaFrontFace, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "COUNTER_CLOCKWISE" => HalaFrontFace::COUNTER_CLOCKWISE,
-        "counter_clockwise" => HalaFrontFace::COUNTER_CLOCKWISE,
-        "CLOCKWISE" => HalaFrontFace::CLOCKWISE,
-        "clockwise" => HalaFrontFace::CLOCKWISE,
-        "default" => HalaFrontFace::default(),
-        _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a front face")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaFrontFaceVisitor)
   }
-
-  deserializer.deserialize_str(HalaFrontFaceVisitor)
 }
 
 impl std::convert::From<vk::FrontFace> for HalaFrontFace {
@@ -493,7 +581,7 @@ impl std::convert::From<HalaFrontFace> for vk::FrontFace {
 }
 
 /// The cull mode.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HalaCullModeFlags(u32);
 crate::hala_bitflags_wrapped!(HalaCullModeFlags, u32);
 impl HalaCullModeFlags {
@@ -503,55 +591,59 @@ impl HalaCullModeFlags {
   pub const FRONT_AND_BACK: Self = Self(vk::CullModeFlags::FRONT_AND_BACK.as_raw());
 }
 
-fn cull_mode_flags_serialize<S>(value: &HalaCullModeFlags, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaCullModeFlags::NONE => "none",
-    HalaCullModeFlags::FRONT => "front",
-    HalaCullModeFlags::BACK => "back",
-    HalaCullModeFlags::FRONT_AND_BACK => "front_and_back",
-    _ => return Err(serde::ser::Error::custom("unexpected cull mode flags value")),
-  };
+impl Serialize for HalaCullModeFlags {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaCullModeFlags::NONE => "none",
+      HalaCullModeFlags::FRONT => "front",
+      HalaCullModeFlags::BACK => "back",
+      HalaCullModeFlags::FRONT_AND_BACK => "front_and_back",
+      _ => return Err(serde::ser::Error::custom("unexpected cull mode flags value")),
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn cull_mode_flags_deserialize<'de, D>(deserializer: D) -> Result<HalaCullModeFlags, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaCullModeFlagsVisitor;
+impl<'de> Deserialize<'de> for HalaCullModeFlags {
+  fn deserialize<D>(deserializer: D) -> Result<HalaCullModeFlags, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaCullModeFlagsVisitor;
 
-  impl<'de> Visitor<'de> for HalaCullModeFlagsVisitor {
-    type Value = HalaCullModeFlags;
+    impl<'de> Visitor<'de> for HalaCullModeFlagsVisitor {
+      type Value = HalaCullModeFlags;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of cull mode flags")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of cull mode flags")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaCullModeFlags, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "NONE" => HalaCullModeFlags::NONE,
+          "none" => HalaCullModeFlags::NONE,
+          "FRONT" => HalaCullModeFlags::FRONT,
+          "front" => HalaCullModeFlags::FRONT,
+          "BACK" => HalaCullModeFlags::BACK,
+          "back" => HalaCullModeFlags::BACK,
+          "FRONT_AND_BACK" => HalaCullModeFlags::FRONT_AND_BACK,
+          "front_and_back" => HalaCullModeFlags::FRONT_AND_BACK,
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a cull mode flags")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaCullModeFlags, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "NONE" => HalaCullModeFlags::NONE,
-        "none" => HalaCullModeFlags::NONE,
-        "FRONT" => HalaCullModeFlags::FRONT,
-        "front" => HalaCullModeFlags::FRONT,
-        "BACK" => HalaCullModeFlags::BACK,
-        "back" => HalaCullModeFlags::BACK,
-        "FRONT_AND_BACK" => HalaCullModeFlags::FRONT_AND_BACK,
-        "front_and_back" => HalaCullModeFlags::FRONT_AND_BACK,
-        _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a cull mode flags")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaCullModeFlagsVisitor)
   }
-
-  deserializer.deserialize_str(HalaCullModeFlagsVisitor)
 }
 
 impl std::convert::From<vk::CullModeFlags> for HalaCullModeFlags {
@@ -567,7 +659,7 @@ impl std::convert::From<HalaCullModeFlags> for vk::CullModeFlags {
 }
 
 /// The polygon mode.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaPolygonMode(i32);
 impl HalaPolygonMode {
   pub const FILL: Self = Self(vk::PolygonMode::FILL.as_raw());
@@ -575,53 +667,57 @@ impl HalaPolygonMode {
   pub const POINT: Self = Self(vk::PolygonMode::POINT.as_raw());
 }
 
-fn polygon_mode_serialize<S>(value: &HalaPolygonMode, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaPolygonMode::FILL => "fill",
-    HalaPolygonMode::LINE => "line",
-    HalaPolygonMode::POINT => "point",
-    _ => "default",
-  };
+impl Serialize for HalaPolygonMode {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaPolygonMode::FILL => "fill",
+      HalaPolygonMode::LINE => "line",
+      HalaPolygonMode::POINT => "point",
+      _ => "default",
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn polygon_mode_deserialize<'de, D>(deserializer: D) -> Result<HalaPolygonMode, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaPolygonModeVisitor;
+impl<'de> Deserialize<'de> for HalaPolygonMode {
+  fn deserialize<D>(deserializer: D) -> Result<HalaPolygonMode, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaPolygonModeVisitor;
 
-  impl<'de> Visitor<'de> for HalaPolygonModeVisitor {
-    type Value = HalaPolygonMode;
+    impl<'de> Visitor<'de> for HalaPolygonModeVisitor {
+      type Value = HalaPolygonMode;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of polygon mode")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of polygon mode")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaPolygonMode, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "FILL" => HalaPolygonMode::FILL,
+          "fill" => HalaPolygonMode::FILL,
+          "LINE" => HalaPolygonMode::LINE,
+          "line" => HalaPolygonMode::LINE,
+          "POINT" => HalaPolygonMode::POINT,
+          "point" => HalaPolygonMode::POINT,
+          "default" => HalaPolygonMode::default(),
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a polygon mode")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaPolygonMode, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "FILL" => HalaPolygonMode::FILL,
-        "fill" => HalaPolygonMode::FILL,
-        "LINE" => HalaPolygonMode::LINE,
-        "line" => HalaPolygonMode::LINE,
-        "POINT" => HalaPolygonMode::POINT,
-        "point" => HalaPolygonMode::POINT,
-        "default" => HalaPolygonMode::default(),
-        _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a polygon mode")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaPolygonModeVisitor)
   }
-
-  deserializer.deserialize_str(HalaPolygonModeVisitor)
 }
 
 impl std::convert::From<vk::PolygonMode> for HalaPolygonMode {
@@ -637,7 +733,7 @@ impl std::convert::From<HalaPolygonMode> for vk::PolygonMode {
 }
 
 /// The compare operation.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaCompareOp(i32);
 impl HalaCompareOp {
   pub const NEVER: Self = Self(vk::CompareOp::NEVER.as_raw());
@@ -650,68 +746,72 @@ impl HalaCompareOp {
   pub const ALWAYS: Self = Self(vk::CompareOp::ALWAYS.as_raw());
 }
 
-fn compare_op_serialize<S>(value: &HalaCompareOp, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaCompareOp::NEVER => "never",
-    HalaCompareOp::LESS => "less",
-    HalaCompareOp::EQUAL => "equal",
-    HalaCompareOp::LESS_OR_EQUAL => "less_or_equal",
-    HalaCompareOp::GREATER => "greater",
-    HalaCompareOp::NOT_EQUAL => "not_equal",
-    HalaCompareOp::GREATER_OR_EQUAL => "greater_or_equal",
-    HalaCompareOp::ALWAYS => "always",
-    _ => "default",
-  };
+impl Serialize for HalaCompareOp {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaCompareOp::NEVER => "never",
+      HalaCompareOp::LESS => "less",
+      HalaCompareOp::EQUAL => "equal",
+      HalaCompareOp::LESS_OR_EQUAL => "less_or_equal",
+      HalaCompareOp::GREATER => "greater",
+      HalaCompareOp::NOT_EQUAL => "not_equal",
+      HalaCompareOp::GREATER_OR_EQUAL => "greater_or_equal",
+      HalaCompareOp::ALWAYS => "always",
+      _ => "default",
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn compare_op_deserialize<'de, D>(deserializer: D) -> Result<HalaCompareOp, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaCompareOpVisitor;
+impl<'de> Deserialize<'de> for HalaCompareOp {
+  fn deserialize<D>(deserializer: D) -> Result<HalaCompareOp, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaCompareOpVisitor;
 
-  impl<'de> Visitor<'de> for HalaCompareOpVisitor {
-    type Value = HalaCompareOp;
+    impl<'de> Visitor<'de> for HalaCompareOpVisitor {
+      type Value = HalaCompareOp;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of compare operation")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of compare operation")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaCompareOp, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "NEVER" => HalaCompareOp::NEVER,
+          "never" => HalaCompareOp::NEVER,
+          "LESS" => HalaCompareOp::LESS,
+          "less" => HalaCompareOp::LESS,
+          "EQUAL" => HalaCompareOp::EQUAL,
+          "equal" => HalaCompareOp::EQUAL,
+          "LESS_OR_EQUAL" => HalaCompareOp::LESS_OR_EQUAL,
+          "less_or_equal" => HalaCompareOp::LESS_OR_EQUAL,
+          "GREATER" => HalaCompareOp::GREATER,
+          "greater" => HalaCompareOp::GREATER,
+          "NOT_EQUAL" => HalaCompareOp::NOT_EQUAL,
+          "not_equal" => HalaCompareOp::NOT_EQUAL,
+          "GREATER_OR_EQUAL" => HalaCompareOp::GREATER_OR_EQUAL,
+          "greater_or_equal" => HalaCompareOp::GREATER_OR_EQUAL,
+          "ALWAYS" => HalaCompareOp::ALWAYS,
+          "always" => HalaCompareOp::ALWAYS,
+          "default" => HalaCompareOp::default(),
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a compare operation")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaCompareOp, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "NEVER" => HalaCompareOp::NEVER,
-        "never" => HalaCompareOp::NEVER,
-        "LESS" => HalaCompareOp::LESS,
-        "less" => HalaCompareOp::LESS,
-        "EQUAL" => HalaCompareOp::EQUAL,
-        "equal" => HalaCompareOp::EQUAL,
-        "LESS_OR_EQUAL" => HalaCompareOp::LESS_OR_EQUAL,
-        "less_or_equal" => HalaCompareOp::LESS_OR_EQUAL,
-        "GREATER" => HalaCompareOp::GREATER,
-        "greater" => HalaCompareOp::GREATER,
-        "NOT_EQUAL" => HalaCompareOp::NOT_EQUAL,
-        "not_equal" => HalaCompareOp::NOT_EQUAL,
-        "GREATER_OR_EQUAL" => HalaCompareOp::GREATER_OR_EQUAL,
-        "greater_or_equal" => HalaCompareOp::GREATER_OR_EQUAL,
-        "ALWAYS" => HalaCompareOp::ALWAYS,
-        "always" => HalaCompareOp::ALWAYS,
-        "default" => HalaCompareOp::default(),
-        _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a compare operation")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaCompareOpVisitor)
   }
-
-  deserializer.deserialize_str(HalaCompareOpVisitor)
 }
 
 impl std::convert::From<vk::CompareOp> for HalaCompareOp {
@@ -749,7 +849,7 @@ impl std::convert::From<HalaStencilFaceFlags> for vk::StencilFaceFlags {
 }
 
 /// The stencil operation.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaStencilOp(i32);
 impl HalaStencilOp {
   pub const KEEP: Self = Self(vk::StencilOp::KEEP.as_raw());
@@ -762,68 +862,72 @@ impl HalaStencilOp {
   pub const DECREMENT_AND_WRAP: Self = Self(vk::StencilOp::DECREMENT_AND_WRAP.as_raw());
 }
 
-fn stencil_op_serialize<S>(value: &HalaStencilOp, serializer: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer,
-{
-  let s = match *value {
-    HalaStencilOp::KEEP => "keep",
-    HalaStencilOp::ZERO => "zero",
-    HalaStencilOp::REPLACE => "replace",
-    HalaStencilOp::INCREMENT_AND_CLAMP => "increment_and_clamp",
-    HalaStencilOp::DECREMENT_AND_CLAMP => "decrement_and_clamp",
-    HalaStencilOp::INVERT => "invert",
-    HalaStencilOp::INCREMENT_AND_WRAP => "increment_and_wrap",
-    HalaStencilOp::DECREMENT_AND_WRAP => "decrement_and_wrap",
-    _ => "default",
-  };
+impl Serialize for HalaStencilOp {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaStencilOp::KEEP => "keep",
+      HalaStencilOp::ZERO => "zero",
+      HalaStencilOp::REPLACE => "replace",
+      HalaStencilOp::INCREMENT_AND_CLAMP => "increment_and_clamp",
+      HalaStencilOp::DECREMENT_AND_CLAMP => "decrement_and_clamp",
+      HalaStencilOp::INVERT => "invert",
+      HalaStencilOp::INCREMENT_AND_WRAP => "increment_and_wrap",
+      HalaStencilOp::DECREMENT_AND_WRAP => "decrement_and_wrap",
+      _ => "default",
+    };
 
-  serializer.serialize_str(s)
+    serializer.serialize_str(s)
+  }
 }
 
-fn stencil_op_deserialize<'de, D>(deserializer: D) -> Result<HalaStencilOp, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  struct HalaStencilOpVisitor;
+impl<'de> Deserialize<'de> for HalaStencilOp {
+  fn deserialize<D>(deserializer: D) -> Result<HalaStencilOp, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaStencilOpVisitor;
 
-  impl<'de> Visitor<'de> for HalaStencilOpVisitor {
-    type Value = HalaStencilOp;
+    impl<'de> Visitor<'de> for HalaStencilOpVisitor {
+      type Value = HalaStencilOp;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-      formatter.write_str("a string of stencil operation")
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of stencil operation")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaStencilOp, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "KEEP" => HalaStencilOp::KEEP,
+          "keep" => HalaStencilOp::KEEP,
+          "ZERO" => HalaStencilOp::ZERO,
+          "zero" => HalaStencilOp::ZERO,
+          "REPLACE" => HalaStencilOp::REPLACE,
+          "replace" => HalaStencilOp::REPLACE,
+          "INCREMENT_AND_CLAMP" => HalaStencilOp::INCREMENT_AND_CLAMP,
+          "increment_and_clamp" => HalaStencilOp::INCREMENT_AND_CLAMP,
+          "DECREMENT_AND_CLAMP" => HalaStencilOp::DECREMENT_AND_CLAMP,
+          "decrement_and_clamp" => HalaStencilOp::DECREMENT_AND_CLAMP,
+          "INVERT" => HalaStencilOp::INVERT,
+          "invert" => HalaStencilOp::INVERT,
+          "INCREMENT_AND_WRAP" => HalaStencilOp::INCREMENT_AND_WRAP,
+          "increment_and_wrap" => HalaStencilOp::INCREMENT_AND_WRAP,
+          "DECREMENT_AND_WRAP" => HalaStencilOp::DECREMENT_AND_WRAP,
+          "decrement_and_wrap" => HalaStencilOp::DECREMENT_AND_WRAP,
+          "default" => HalaStencilOp::default(),
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a stencil operation")),
+        };
+
+        Ok(val)
+      }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<HalaStencilOp, E>
-    where
-      E: de::Error,
-    {
-      let val = match value {
-        "KEEP" => HalaStencilOp::KEEP,
-        "keep" => HalaStencilOp::KEEP,
-        "ZERO" => HalaStencilOp::ZERO,
-        "zero" => HalaStencilOp::ZERO,
-        "REPLACE" => HalaStencilOp::REPLACE,
-        "replace" => HalaStencilOp::REPLACE,
-        "INCREMENT_AND_CLAMP" => HalaStencilOp::INCREMENT_AND_CLAMP,
-        "increment_and_clamp" => HalaStencilOp::INCREMENT_AND_CLAMP,
-        "DECREMENT_AND_CLAMP" => HalaStencilOp::DECREMENT_AND_CLAMP,
-        "decrement_and_clamp" => HalaStencilOp::DECREMENT_AND_CLAMP,
-        "INVERT" => HalaStencilOp::INVERT,
-        "invert" => HalaStencilOp::INVERT,
-        "INCREMENT_AND_WRAP" => HalaStencilOp::INCREMENT_AND_WRAP,
-        "increment_and_wrap" => HalaStencilOp::INCREMENT_AND_WRAP,
-        "DECREMENT_AND_WRAP" => HalaStencilOp::DECREMENT_AND_WRAP,
-        "decrement_and_wrap" => HalaStencilOp::DECREMENT_AND_WRAP,
-        "default" => HalaStencilOp::default(),
-        _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a stencil operation")),
-      };
-
-      Ok(val)
-    }
+    deserializer.deserialize_str(HalaStencilOpVisitor)
   }
-
-  deserializer.deserialize_str(HalaStencilOpVisitor)
 }
 
 impl std::convert::From<vk::StencilOp> for HalaStencilOp {
@@ -1030,11 +1134,8 @@ impl std::convert::From<HalaDynamicState> for vk::DynamicState {
 /// The blend state.
 #[derive(Serialize, Deserialize)]
 pub struct HalaBlendState {
-  #[serde(serialize_with = "blend_factor_serialize", deserialize_with = "blend_factor_deserialize")]
   pub src_factor: HalaBlendFactor,
-  #[serde(serialize_with = "blend_factor_serialize", deserialize_with = "blend_factor_deserialize")]
   pub dst_factor: HalaBlendFactor,
-  #[serde(serialize_with = "blend_op_serialize", deserialize_with = "blend_op_deserialize")]
   pub op: HalaBlendOp,
 }
 
@@ -1076,11 +1177,8 @@ impl HalaBlendState {
 /// The rasterizer state.
 #[derive(Serialize, Deserialize)]
 pub struct HalaRasterizerState {
-  #[serde(serialize_with = "front_face_serialize", deserialize_with = "front_face_deserialize")]
   pub front_face: HalaFrontFace,
-  #[serde(serialize_with = "cull_mode_flags_serialize", deserialize_with = "cull_mode_flags_deserialize")]
   pub cull_mode: HalaCullModeFlags,
-  #[serde(serialize_with = "polygon_mode_serialize", deserialize_with = "polygon_mode_deserialize")]
   pub polygon_mode: HalaPolygonMode,
   pub line_width: f32,
 }
@@ -1128,7 +1226,6 @@ impl HalaRasterizerState {
 pub struct HalaDepthState {
   pub test_enable: bool,
   pub write_enable: bool,
-  #[serde(serialize_with = "compare_op_serialize", deserialize_with = "compare_op_deserialize")]
   pub compare_op: HalaCompareOp,
 }
 
@@ -1170,13 +1267,9 @@ impl HalaDepthState {
 /// The stencil operation state.
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct HalaStencilOpState {
-  #[serde(serialize_with = "stencil_op_serialize", deserialize_with = "stencil_op_deserialize")]
   pub fail_op: HalaStencilOp,
-  #[serde(serialize_with = "stencil_op_serialize", deserialize_with = "stencil_op_deserialize")]
   pub pass_op: HalaStencilOp,
-  #[serde(serialize_with = "stencil_op_serialize", deserialize_with = "stencil_op_deserialize")]
   pub depth_fail_op: HalaStencilOp,
-  #[serde(serialize_with = "compare_op_serialize", deserialize_with = "compare_op_deserialize")]
   pub compare_op: HalaCompareOp,
   pub compare_mask: u32,
   pub write_mask: u32,
@@ -1934,6 +2027,7 @@ impl HalaRayTracingPipeline {
   /// Create a ray tracing pipeline.
   /// param logical_device: The logical device.
   /// param descriptor_set_layouts: The descriptor set layouts.
+  /// param push_constant_ranges: The push constant ranges.
   /// param raygen_shaders: The ray generation shaders.
   /// param miss_shaders: The miss shaders.
   /// param hit_shaders: The hit shaders.
@@ -1944,9 +2038,10 @@ impl HalaRayTracingPipeline {
   /// param debug_name: The debug name.
   /// return: The ray tracing pipeline.
   #[allow(clippy::too_many_arguments)]
-  pub fn new<DSL, S>(
+  pub fn new<DSL, PCR, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     descriptor_set_layouts: &[DSL],
+    push_constant_ranges: &[PCR],
     raygen_shaders: &[S],
     miss_shaders: &[S],
     hit_shaders: &[(Option<S>, Option<S>, Option<S>)],
@@ -1957,12 +2052,13 @@ impl HalaRayTracingPipeline {
     debug_name: &str,
   ) -> Result<HalaRayTracingPipeline, HalaGfxError>
     where DSL: AsRef<HalaDescriptorSetLayout>,
+          PCR: AsRef<HalaPushConstantRange>,
           S: AsRef<HalaShader>
   {
     // Create the pipeline layout.
-    let pipeline_layout = HalaPipelineBase::create_pipeline_layout::<HalaPushConstantRange, _>(
+    let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
       &logical_device,
-      &[],
+      push_constant_ranges,
       descriptor_set_layouts,
       debug_name)?;
 
@@ -2207,23 +2303,26 @@ impl HalaComputePipeline {
   /// Create a compute pipeline.
   /// param logical_device: The logical device.
   /// param descriptor_set_layouts: The descriptor set layouts.
+  /// param push_constant_ranges: The push constant ranges.
   /// param shader: The shader.
   /// param pipeline_cache: The pipeline cache.
   /// param debug_name: The debug name.
   /// return: The compute pipeline.
-  pub fn new<DSL>(
+  pub fn new<DSL, PCR>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     descriptor_set_layouts: &[DSL],
+    push_constant_ranges: &[PCR],
     shader: &HalaShader,
     pipeline_cache: Option<&HalaPipelineCache>,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError>
-    where DSL: AsRef<HalaDescriptorSetLayout>
+    where DSL: AsRef<HalaDescriptorSetLayout>,
+          PCR: AsRef<HalaPushConstantRange>
   {
     // Create the pipeline layout.
-    let pipeline_layout = HalaPipelineBase::create_pipeline_layout::<HalaPushConstantRange, _>(
+    let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
       &logical_device,
-      &[],
+      push_constant_ranges,
       descriptor_set_layouts,
       debug_name)?;
 

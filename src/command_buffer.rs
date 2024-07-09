@@ -632,14 +632,14 @@ impl HalaCommandBufferSet {
 
   /// Push constants.
   /// param index: The index of the command buffer.
-  /// param pipeline: The pipeline.
+  /// param pipeline_layout: The pipeline layout.
   /// param shader_stage: The shader stage.
   /// param offset: The offset in bytes.
   /// param data: The data.
   pub fn push_constants(
     &self,
     index: usize,
-    pipeline: &crate::HalaGraphicsPipeline,
+    pipeline_layout: vk::PipelineLayout,
     shader_stage: crate::HalaShaderStageFlags,
     offset: u32,
     data: &[u8],
@@ -648,7 +648,7 @@ impl HalaCommandBufferSet {
     unsafe {
       logical_device.raw.cmd_push_constants(
         self.raw[index],
-        pipeline.layout,
+        pipeline_layout,
         shader_stage.into(),
         offset,
         data,
@@ -658,14 +658,14 @@ impl HalaCommandBufferSet {
 
   /// Push constants as f32.
   /// param index: The index of the command buffer.
-  /// param pipeline: The pipeline.
+  /// param pipeline_layout: The pipeline layout.
   /// param shader_stage: The shader stage.
   /// param offset: The offset in bytes.
   /// param data: The data.
   pub fn push_constants_f32(
     &self,
     index: usize,
-    pipeline: &crate::HalaGraphicsPipeline,
+    pipeline_layout: vk::PipelineLayout,
     shader_stage: crate::HalaShaderStageFlags,
     offset: u32,
     data: &[f32],
@@ -675,7 +675,7 @@ impl HalaCommandBufferSet {
       let data = std::slice::from_raw_parts(data.as_ptr() as *const u8, std::mem::size_of_val(data));
       logical_device.raw.cmd_push_constants(
         self.raw[index],
-        pipeline.layout,
+        pipeline_layout,
         shader_stage.into(),
         offset,
         data,

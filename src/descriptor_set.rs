@@ -1,5 +1,9 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::fmt;
+
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::de::{self, Visitor, Unexpected};
 
 use ash::vk::{self, Handle};
 
@@ -37,6 +41,84 @@ impl std::convert::From<vk::DescriptorType> for HalaDescriptorType {
 impl std::convert::From<HalaDescriptorType> for vk::DescriptorType {
   fn from(descriptor_type: HalaDescriptorType) -> Self {
     Self::from_raw(descriptor_type.0)
+  }
+}
+
+impl Serialize for HalaDescriptorType {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaDescriptorType::SAMPLER => "sampler",
+      HalaDescriptorType::COMBINED_IMAGE_SAMPLER => "combined_image_sampler",
+      HalaDescriptorType::SAMPLED_IMAGE => "sampled_image",
+      HalaDescriptorType::STORAGE_IMAGE => "storage_image",
+      HalaDescriptorType::UNIFORM_TEXEL_BUFFER => "uniform_texel_buffer",
+      HalaDescriptorType::STORAGE_TEXEL_BUFFER => "storage_texel_buffer",
+      HalaDescriptorType::UNIFORM_BUFFER => "uniform_buffer",
+      HalaDescriptorType::STORAGE_BUFFER => "storage_buffer",
+      HalaDescriptorType::UNIFORM_BUFFER_DYNAMIC => "uniform_buffer_dynamic",
+      HalaDescriptorType::STORAGE_BUFFER_DYNAMIC => "storage_buffer_dynamic",
+      HalaDescriptorType::INPUT_ATTACHMENT => "input_attachment",
+      HalaDescriptorType::ACCELERATION_STRUCTURE => "acceleration_structure",
+      _ => "default",
+    };
+
+    serializer.serialize_str(s)
+  }
+}
+
+impl<'de> Deserialize<'de> for HalaDescriptorType {
+  fn deserialize<D>(deserializer: D) -> Result<HalaDescriptorType, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaDescriptorTypeVisitor;
+
+    impl<'de> Visitor<'de> for HalaDescriptorTypeVisitor {
+      type Value = HalaDescriptorType;
+
+      fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a string of descriptor type")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaDescriptorType, E>
+      where
+        E: de::Error,
+      {
+        match value {
+          "SAMPLER" => Ok(HalaDescriptorType::SAMPLER),
+          "sampler" => Ok(HalaDescriptorType::SAMPLER),
+          "COMBINED_IMAGE_SAMPLER" => Ok(HalaDescriptorType::COMBINED_IMAGE_SAMPLER),
+          "combined_image_sampler" => Ok(HalaDescriptorType::COMBINED_IMAGE_SAMPLER),
+          "SAMPLED_IMAGE" => Ok(HalaDescriptorType::SAMPLED_IMAGE),
+          "sampled_image" => Ok(HalaDescriptorType::SAMPLED_IMAGE),
+          "STORAGE_IMAGE" => Ok(HalaDescriptorType::STORAGE_IMAGE),
+          "storage_image" => Ok(HalaDescriptorType::STORAGE_IMAGE),
+          "UNIFORM_TEXEL_BUFFER" => Ok(HalaDescriptorType::UNIFORM_TEXEL_BUFFER),
+          "uniform_texel_buffer" => Ok(HalaDescriptorType::UNIFORM_TEXEL_BUFFER),
+          "STORAGE_TEXEL_BUFFER" => Ok(HalaDescriptorType::STORAGE_TEXEL_BUFFER),
+          "storage_texel_buffer" => Ok(HalaDescriptorType::STORAGE_TEXEL_BUFFER),
+          "UNIFORM_BUFFER" => Ok(HalaDescriptorType::UNIFORM_BUFFER),
+          "uniform_buffer" => Ok(HalaDescriptorType::UNIFORM_BUFFER),
+          "STORAGE_BUFFER" => Ok(HalaDescriptorType::STORAGE_BUFFER),
+          "storage_buffer" => Ok(HalaDescriptorType::STORAGE_BUFFER),
+          "UNIFORM_BUFFER_DYNAMIC" => Ok(HalaDescriptorType::UNIFORM_BUFFER_DYNAMIC),
+          "uniform_buffer_dynamic" => Ok(HalaDescriptorType::UNIFORM_BUFFER_DYNAMIC),
+          "STORAGE_BUFFER_DYNAMIC" => Ok(HalaDescriptorType::STORAGE_BUFFER_DYNAMIC),
+          "storage_buffer_dynamic" => Ok(HalaDescriptorType::STORAGE_BUFFER_DYNAMIC),
+          "INPUT_ATTACHMENT" => Ok(HalaDescriptorType::INPUT_ATTACHMENT),
+          "input_attachment" => Ok(HalaDescriptorType::INPUT_ATTACHMENT),
+          "ACCELERATION_STRUCTURE" => Ok(HalaDescriptorType::ACCELERATION_STRUCTURE),
+          "acceleration_structure" => Ok(HalaDescriptorType::ACCELERATION_STRUCTURE),
+          "default" => Ok(HalaDescriptorType::default()),
+          _ => Err(de::Error::invalid_value(Unexpected::Str(value), &"a descriptor type")),
+        }
+      }
+    }
+
+    deserializer.deserialize_str(HalaDescriptorTypeVisitor)
   }
 }
 
@@ -274,7 +356,6 @@ impl HalaDescriptorSet {
   /// param logical_device: The logical device.
   /// param descriptor_pool: The descriptor pool.
   /// param layout: The descriptor set layout.
-  /// param count: The count of the descriptor set.
   /// param variable_descriptor_count: The variable descriptor count.
   /// param debug_name: The debug name.
   /// return: The descriptor set.
@@ -282,7 +363,6 @@ impl HalaDescriptorSet {
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     descriptor_pool: Rc<RefCell<HalaDescriptorPool>>,
     layout: HalaDescriptorSetLayout,
-    count: usize,
     variable_descriptor_count: u32,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
@@ -290,7 +370,7 @@ impl HalaDescriptorSet {
       logical_device,
       descriptor_pool,
       layout,
-      count,
+      1,
       variable_descriptor_count,
       debug_name)?;
     self_.is_static = true;
