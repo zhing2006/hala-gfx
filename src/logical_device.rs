@@ -86,9 +86,9 @@ impl HalaLogicalDevice {
   ) -> Result<Self, HalaGfxError> {
     // Find queue family indices.
     let (
-      graphics_queue_family_index,
-      transfer_queue_family_index,
-      compute_queue_family_index,
+      (graphics_queue_family_index, graphics_queue_count),
+      (transfer_queue_family_index, transfer_queue_count),
+      (compute_queue_family_index, compute_queue_count),
     ) = Self::find_queue_family_indices(
       instance,
       physical_device,
@@ -102,7 +102,20 @@ impl HalaLogicalDevice {
       gpu_req,
       instance,
       physical_device,
-      (graphics_queue_family_index, transfer_queue_family_index, compute_queue_family_index),
+      (
+        (
+          graphics_queue_family_index,
+          graphics_queue_count,
+        ),
+        (
+          transfer_queue_family_index,
+          transfer_queue_count,
+        ),
+        (
+          compute_queue_family_index,
+          compute_queue_count,
+        ),
+      )
     )?;
 
     // Create ray tracing objects.
@@ -395,10 +408,14 @@ impl HalaLogicalDevice {
   /// param instance: The instance.
   /// param physical_device: The physical device.
   /// param surface: The surface.
-  /// return: The queue family indices.
-  fn find_queue_family_indices(instance: &crate::HalaInstance, physical_device: &crate::HalaPhysicalDevice, surface: &crate::HalaSurface) -> Result<(u32, u32, u32), HalaGfxError> {
+  /// return: The queue family index and queue count pairs.
+  fn find_queue_family_indices(
+    instance: &crate::HalaInstance,
+    physical_device: &crate::HalaPhysicalDevice,
+    surface: &crate::HalaSurface
+  ) -> Result<((u32, u32), (u32, u32), (u32, u32)), HalaGfxError> {
     let queue_family_properties = unsafe { instance.raw.get_physical_device_queue_family_properties(physical_device.raw) };
-    let queue_family_indices = {
+    let queue_family_pairs = {
       let mut found_graphics_q_index = None;
       let mut found_transfer_q_index = None;
       let mut found_compute_q_index = None;
@@ -451,47 +468,69 @@ impl HalaLogicalDevice {
         }
       }
       (
-        found_graphics_q_index
-          .ok_or_else(|| HalaGfxError::new("Failed to find a graphics queue.", None))?,
-        found_transfer_q_index
-          .ok_or_else(|| HalaGfxError::new("Failed to find a transfer queue.", None))?,
-        found_compute_q_index
-          .ok_or_else(|| HalaGfxError::new("Failed to find a compute queue.", None))?,
+        (
+          found_graphics_q_index
+            .ok_or_else(|| HalaGfxError::new("Failed to find a graphics queue.", None))?,
+          found_graphics_q_count
+        ),
+        (
+          found_transfer_q_index
+            .ok_or_else(|| HalaGfxError::new("Failed to find a transfer queue.", None))?,
+          found_transfer_q_count
+        ),
+        (
+          found_compute_q_index
+            .ok_or_else(|| HalaGfxError::new("Failed to find a compute queue.", None))?,
+          found_compute_q_count
+        ),
       )
     };
-    Ok(queue_family_indices)
+    Ok(queue_family_pairs)
   }
 
   /// Create a logical device.
   /// param gpu_req: The GPU requirements.
   /// param instance: The instance.
   /// param physical_device: The physical device.
-  /// param queue_family_indices: The queue family indices.
+  /// param queue_family_pairs: The queue family pairs.
   /// return: The logical device.
   fn create_logical_device(
     gpu_req: &crate::HalaGPURequirements,
     instance: &crate::HalaInstance,
     physical_device: &crate::HalaPhysicalDevice,
-    queue_family_indices: (u32, u32, u32)) -> Result<ash::Device, HalaGfxError>
+    queue_family_pairs: ((u32, u32), (u32, u32), (u32, u32))) -> Result<ash::Device, HalaGfxError>
   {
-    let priorities = [1.0_f32];
+    let (
+      (graphics_queue_family_index, graphics_queue_count),
+      (transfer_queue_family_index, transfer_queue_count),
+      (compute_queue_family_index, compute_queue_count),
+    ) = queue_family_pairs;
+    let graphics_priorities = (0..graphics_queue_count)
+      .map(|i| (graphics_queue_count as f32 - i as f32) / graphics_queue_count as f32)
+      .collect::<Vec<_>>();
+    let transfer_priorities = (0..transfer_queue_count)
+      .map(|i| (transfer_queue_count as f32 - i as f32) / transfer_queue_count as f32)
+      .collect::<Vec<_>>();
+    let compute_priorities = (0..compute_queue_count)
+      .map(|i| (compute_queue_count as f32 - i as f32) / compute_queue_count as f32)
+      .collect::<Vec<_>>();
     let mut queue_infos = vec![
       vk::DeviceQueueCreateInfo::default()
-        .queue_family_index(queue_family_indices.0)
-        .queue_priorities(&priorities)
+        .queue_family_index(graphics_queue_family_index)
+        .queue_priorities(graphics_priorities.as_slice()),
     ];
-    if queue_family_indices.0 != queue_family_indices.1 {
+    if graphics_queue_family_index != transfer_queue_family_index {
       queue_infos.push(
         vk::DeviceQueueCreateInfo::default()
-          .queue_family_index(queue_family_indices.1)
-          .queue_priorities(&priorities)
+          .queue_family_index(transfer_queue_family_index)
+          .queue_priorities(transfer_priorities.as_slice())
       );
     }
-    if queue_family_indices.0 != queue_family_indices.2 && queue_family_indices.1 != queue_family_indices.2 {
+    if graphics_queue_family_index != compute_queue_family_index && transfer_queue_family_index != compute_queue_family_index {
       queue_infos.push(
         vk::DeviceQueueCreateInfo::default()
-          .queue_family_index(queue_family_indices.2)
-          .queue_priorities(&priorities)
+          .queue_family_index(compute_queue_family_index)
+          .queue_priorities(compute_priorities.as_slice())
       );
     }
     let mut extension_name_ptrs =  vec![
