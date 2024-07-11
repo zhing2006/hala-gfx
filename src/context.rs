@@ -2,8 +2,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Duration;
 
-use ash::vk;
-
 use crate::{
   HalaGPURequirements,
   HalaInstance,
@@ -17,6 +15,7 @@ use crate::{
   HalaQueryPool,
   HalaImage,
   HalaGfxError,
+  HalaFormat,
 };
 
 /// The context of the hala-gfx crate.
@@ -278,7 +277,7 @@ impl HalaContext {
           ..Default::default()
         }
       ];
-      if self.swapchain.depth_stencil_format != vk::Format::UNDEFINED {
+      if self.swapchain.depth_stencil_format != HalaFormat::UNDEFINED {
         barriers.push(
           crate::HalaImageBarrierInfo {
             old_layout: crate::HalaImageLayout::UNDEFINED,

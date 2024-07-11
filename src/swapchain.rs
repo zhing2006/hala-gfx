@@ -5,13 +5,14 @@ use ash::vk;
 
 use crate::{
   HalaGfxError,
-  HalaCommandBufferSet
+  HalaCommandBufferSet,
+  HalaFormat,
 };
 
 /// The swapchain description.
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct HalaSwapchainDesc {
-  pub format: vk::Format,
+  pub format: HalaFormat,
   pub color_space: vk::ColorSpaceKHR,
   pub dims: vk::Extent2D,
   pub present_mode: vk::PresentModeKHR,
@@ -25,7 +26,7 @@ pub struct HalaSwapchain {
   pub images: Vec<vk::Image>,
   pub image_views: Vec<vk::ImageView>,
   pub desc: HalaSwapchainDesc,
-  pub depth_stencil_format: vk::Format,
+  pub depth_stencil_format: HalaFormat,
   pub depth_stencil_image: vk::Image,
   pub depth_stencil_image_view: vk::ImageView,
   pub depth_stencil_memory: vk::DeviceMemory,
@@ -51,7 +52,7 @@ impl Drop for HalaSwapchain {
       for rf in self.render_finisheds.iter() {
         logical_device.raw.destroy_semaphore(*rf, None);
       }
-      if self.depth_stencil_format != vk::Format::UNDEFINED {
+      if self.depth_stencil_format != HalaFormat::UNDEFINED {
         logical_device.raw.destroy_image_view(self.depth_stencil_image_view, None);
         logical_device.raw.destroy_image(self.depth_stencil_image, None);
         logical_device.raw.free_memory(self.depth_stencil_memory, None);
@@ -131,7 +132,7 @@ impl HalaSwapchain {
         depth_stencil_image,
         depth_stencil_image_view,
         depth_stencil_memory,
-        has_stencil: depth_stencil_format == vk::Format::D16_UNORM_S8_UINT || depth_stencil_format == vk::Format::D24_UNORM_S8_UINT || depth_stencil_format == vk::Format::D32_SFLOAT_S8_UINT,
+        has_stencil: depth_stencil_format == HalaFormat::D16_UNORM_S8_UINT || depth_stencil_format == HalaFormat::D24_UNORM_S8_UINT || depth_stencil_format == HalaFormat::D32_SFLOAT_S8_UINT,
         num_of_images,
         current_image_index: 0,
         image_availables,
@@ -415,7 +416,7 @@ impl HalaSwapchain {
       swapchain_images,
       swapchain_imageviews,
       HalaSwapchainDesc {
-        format,
+        format: format.into(),
         color_space: vk::ColorSpaceKHR::SRGB_NONLINEAR,
         dims: extent,
         present_mode,
@@ -436,10 +437,10 @@ impl HalaSwapchain {
     physical_device: &crate::HalaPhysicalDevice,
     logical_device: &crate::HalaLogicalDevice,
     dims: vk::Extent2D,
-  ) -> Result<(vk::Format, vk::Image, vk::ImageView, vk::DeviceMemory), HalaGfxError>
+  ) -> Result<(HalaFormat, vk::Image, vk::ImageView, vk::DeviceMemory), HalaGfxError>
   {
     if !gpu_req.require_depth && !gpu_req.require_stencil {
-      return Ok((vk::Format::UNDEFINED, vk::Image::null(), vk::ImageView::null(), vk::DeviceMemory::null()));
+      return Ok((HalaFormat::UNDEFINED, vk::Image::null(), vk::ImageView::null(), vk::DeviceMemory::null()));
     }
 
     let (depth_stencil_format, depth_stencil_image_aspect) = if gpu_req.require_depth && gpu_req.require_stencil {
@@ -529,7 +530,7 @@ impl HalaSwapchain {
     ).map_err(|err| HalaGfxError::new("Failed to set debug name for depth stencil memory.", Some(Box::new(err))))?;
 
     Ok((
-      depth_stencil_format,
+      depth_stencil_format.into(),
       depth_stencil_image,
       depth_stencil_image_view,
       depth_stencil_memory,

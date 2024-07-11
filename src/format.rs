@@ -203,8 +203,20 @@ impl std::convert::From<vk::Format> for HalaFormat {
   }
 }
 
+impl std::convert::From<&vk::Format> for HalaFormat {
+  fn from(val: &vk::Format) -> Self {
+    Self(val.as_raw())
+  }
+}
+
 impl std::convert::From<HalaFormat> for vk::Format {
   fn from(val: HalaFormat) -> Self {
+    vk::Format::from_raw(val.0)
+  }
+}
+
+impl std::convert::From<&HalaFormat> for vk::Format {
+  fn from(val: &HalaFormat) -> Self {
     vk::Format::from_raw(val.0)
   }
 }

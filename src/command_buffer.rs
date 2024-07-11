@@ -326,7 +326,7 @@ impl HalaCommandBufferSet {
     depth_clear_value: Option<f32>,
     stencil_clear_value: Option<u32>,
   ) {
-    let has_depth = swapchain.depth_stencil_format != vk::Format::UNDEFINED;
+    let has_depth = swapchain.depth_stencil_format != HalaFormat::UNDEFINED;
     let has_stencil = swapchain.has_stencil;
 
     let color_attachment_info = vk::RenderingAttachmentInfo::default()
@@ -1252,7 +1252,7 @@ impl HalaCommandBufferSet {
       );
     let barriers = [color_barrier, depth_stencil_barrier];
 
-    let dependency_info = if swapchain.depth_stencil_format == vk::Format::UNDEFINED {
+    let dependency_info = if swapchain.depth_stencil_format == HalaFormat::UNDEFINED {
       vk::DependencyInfoKHR::default()
         .image_memory_barriers(std::slice::from_ref(&color_barrier))
     } else {

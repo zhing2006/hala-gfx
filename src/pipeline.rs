@@ -1435,28 +1435,29 @@ impl Drop for HalaGraphicsPipeline {
   }
 }
 
-/// The implementation of graphics pipeline.
-/// param logical_device: The logical device.
-/// param swapchain: The swapchain.
-/// param descriptor_set_layouts: The descriptor set layouts.
-/// param flags: The pipeline create flags.
-/// param vertex_attribute_descriptions: The vertex attribute descriptions.
-/// param vertex_binding_descriptions: The vertex binding descriptions.
-/// param push_constant_ranges: The push constant ranges.
-/// param primitive_topology: The primitive topology.
-/// param color_blend: The color blend(source, destination, operation).
-/// param alpha_blend: The alpha blend(source, destination, operation).
-/// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
-/// param depth_info: The depth info(test enable, write enable, compare operation).
-/// param stencil_info: The stencil info(test enable, front, back).
-/// param shaders: The shaders.
-/// param dynamic_states: The dynamic states.
-/// param pipeline_cache: The pipeline cache.
-/// param debug_name: The debug name.
-/// return: The graphics pipeline.
+/// The graphics pipeline implementation.
 #[allow(clippy::too_many_arguments)]
 impl HalaGraphicsPipeline {
 
+  /// Create a graphics pipeline.
+  /// param logical_device: The logical device.
+  /// param swapchain: The swapchain.
+  /// param descriptor_set_layouts: The descriptor set layouts.
+  /// param flags: The pipeline create flags.
+  /// param vertex_attribute_descriptions: The vertex attribute descriptions.
+  /// param vertex_binding_descriptions: The vertex binding descriptions.
+  /// param push_constant_ranges: The push constant ranges.
+  /// param primitive_topology: The primitive topology.
+  /// param color_blend: The color blend(source, destination, operation).
+  /// param alpha_blend: The alpha blend(source, destination, operation).
+  /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// param depth_info: The depth info(test enable, write enable, compare operation).
+  /// param stencil_info: The stencil info(test enable, front, back).
+  /// param shaders: The shaders.
+  /// param dynamic_states: The dynamic states.
+  /// param pipeline_cache: The pipeline cache.
+  /// param debug_name: The debug name.
+  /// return: The graphics pipeline.
   pub fn new<DSL, VIAD, VIBD, PCR, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     swapchain: &HalaSwapchain,
@@ -1604,6 +1605,96 @@ impl HalaGraphicsPipeline {
     )
   }
 
+  /// Create a graphics pipeline with specified formats and size.
+  /// param logical_device: The logical device.
+  /// color_formats: The color formats.
+  /// depth_format: The depth format.
+  /// width: The width.
+  /// height: The height.
+  /// descriptor_set_layouts: The descriptor set layouts.
+  /// flags: The pipeline create flags.
+  /// vertex_attribute_descriptions: The vertex attribute descriptions.
+  /// vertex_binding_descriptions: The vertex binding descriptions.
+  /// push_constant_ranges: The push constant ranges.
+  /// primitive_topology: The primitive topology.
+  /// color_blend: The color blend(source, destination, operation).
+  /// alpha_blend: The alpha blend(source, destination, operation).
+  /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// depth_info: The depth info(test enable, write enable, compare operation).
+  /// stencil_info: The stencil info(test enable, front, back).
+  /// shaders: The shaders.
+  /// dynamic_states: The dynamic states.
+  /// pipeline_cache: The pipeline cache.
+  /// debug_name: The debug name.
+  /// return: The graphics pipeline.
+  pub fn with_format_and_size<DSL, VIAD, VIBD, PCR, S>(
+    logical_device: Rc<RefCell<HalaLogicalDevice>>,
+    color_formats: &[HalaFormat],
+    depth_format: Option<HalaFormat>,
+    width: u32,
+    height: u32,
+    descriptor_set_layouts: &[DSL],
+    flags: HalaPipelineCreateFlags,
+    vertex_attribute_descriptions: &[VIAD],
+    vertex_binding_descriptions: &[VIBD],
+    push_constant_ranges: &[PCR],
+    primitive_topology: HalaPrimitiveTopology,
+    color_blend: &HalaBlendState,
+    alpha_blend: &HalaBlendState,
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
+    shaders: &[S],
+    dynamic_states: &[HalaDynamicState],
+    pipeline_cache: Option<&HalaPipelineCache>,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError>
+    where DSL: AsRef<HalaDescriptorSetLayout>,
+          VIAD: AsRef<HalaVertexInputAttributeDescription>,
+          VIBD: AsRef<HalaVertexInputBindingDescription>,
+          PCR: AsRef<HalaPushConstantRange>,
+          S: AsRef<HalaShader>,
+  {
+    let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
+      &logical_device,
+      push_constant_ranges,
+      descriptor_set_layouts,
+      debug_name
+    )?;
+
+    let graphics_pipeline = Self::create_pipeline_with_format_and_size(
+      &logical_device,
+      color_formats,
+      depth_format,
+      width,
+      height,
+      flags,
+      vertex_attribute_descriptions,
+      vertex_binding_descriptions,
+      primitive_topology,
+      color_blend,
+      alpha_blend,
+      rasterizer_info,
+      depth_info,
+      stencil_info,
+      shaders,
+      dynamic_states,
+      pipeline_cache,
+      pipeline_layout,
+      debug_name
+    )?;
+
+    log::debug!("A HalaGraphicsPipeline \"{}\" is created.", debug_name);
+    Ok(
+      Self {
+        logical_device,
+        raw: graphics_pipeline,
+        layout: pipeline_layout,
+        debug_name: debug_name.to_string(),
+      }
+    )
+  }
+
   /// Create a graphics pipeline.
   /// param logical_device: The logical device.
   /// param swapchain: The swapchain.
@@ -1644,156 +1735,27 @@ impl HalaGraphicsPipeline {
           VIBD: AsRef<HalaVertexInputBindingDescription>,
           S: AsRef<HalaShader>
   {
-    let vertex_attribute_descriptions: Vec<vk::VertexInputAttributeDescription> = vertex_attribute_descriptions
-      .iter()
-      .map(|v| v.as_ref().into())
-      .collect();
-    let vertex_binding_descriptions: Vec<vk::VertexInputBindingDescription> = vertex_binding_descriptions
-      .iter()
-      .map(|v| v.as_ref().into())
-      .collect();
-    let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::default()
-      .vertex_attribute_descriptions(&vertex_attribute_descriptions)
-      .vertex_binding_descriptions(&vertex_binding_descriptions);
-    let input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo::default()
-      .topology(primitive_topology.into());
-
-    let viewports = [vk::Viewport {
-      x: 0.,
-      y: swapchain.desc.dims.height as f32,
-      width: swapchain.desc.dims.width as f32,
-      height: -(swapchain.desc.dims.height as f32),
-      min_depth: 0.,
-      max_depth: 1.,
-    }];
-    let scissors = [vk::Rect2D {
-      offset: vk::Offset2D { x: 0, y: 0 },
-      extent: swapchain.desc.dims,
-    }];
-    let viewport_info = vk::PipelineViewportStateCreateInfo::default()
-      .viewports(&viewports)
-      .scissors(&scissors);
-
-    let rasterizer_info = vk::PipelineRasterizationStateCreateInfo::default()
-      .line_width(rasterizer_info.line_width)
-      .front_face(rasterizer_info.front_face.into())
-      .cull_mode(rasterizer_info.cull_mode.into())
-      .polygon_mode(rasterizer_info.polygon_mode.into());
-
-    let multisampler_info = vk::PipelineMultisampleStateCreateInfo::default()
-      .rasterization_samples(vk::SampleCountFlags::TYPE_1);
-
-    let colourblend_attachments = [vk::PipelineColorBlendAttachmentState::default()
-      .blend_enable(true)
-      .src_color_blend_factor(color_blend.src_factor.into())
-      .dst_color_blend_factor(color_blend.dst_factor.into())
-      .color_blend_op(color_blend.op.into())
-      .src_alpha_blend_factor(alpha_blend.src_factor.into())
-      .dst_alpha_blend_factor(alpha_blend.dst_factor.into())
-      .alpha_blend_op(alpha_blend.op.into())
-      .color_write_mask(
-        vk::ColorComponentFlags::R | vk::ColorComponentFlags::G | vk::ColorComponentFlags::B | vk::ColorComponentFlags::A,
-      )];
-    let colourblend_info =
-      vk::PipelineColorBlendStateCreateInfo::default().attachments(&colourblend_attachments);
-
-    let main_func_name = std::ffi::CString::new("main")
-      .map_err(|err| HalaGfxError::new("Failed to create \"main\" CString.", Some(Box::new(err))))?;
-    let shader_stage_infos = shaders
-      .iter()
-      .map(|shader| {
-        let shader = shader.as_ref();
-        vk::PipelineShaderStageCreateInfo::default()
-          .stage(shader.stage_flags.into())
-          .module(shader.module)
-          .name(&main_func_name)
-      })
-      .collect::<Vec<_>>();
-
-    let rendering_info = vk::PipelineRenderingCreateInfo::default()
-      .color_attachment_formats(std::slice::from_ref(&swapchain.desc.format));
-    let rendering_info = if swapchain.depth_stencil_format != vk::Format::UNDEFINED {
-      rendering_info.depth_attachment_format(swapchain.depth_stencil_format)
-    } else {
-      rendering_info
-    };
-    let mut rendering_info = if swapchain.has_stencil {
-      rendering_info.stencil_attachment_format(swapchain.depth_stencil_format)
-    } else {
-      rendering_info
-    };
-
-    let dynamic_states = dynamic_states
-      .iter()
-      .map(|ds| vk::DynamicState::from(*ds))
-      .collect::<Vec<_>>();
-    let dynamic_state_info = vk::PipelineDynamicStateCreateInfo::default()
-      .dynamic_states(dynamic_states.as_slice());
-
-    let pipeline_info = vk::GraphicsPipelineCreateInfo::default()
-      .flags(flags.into())
-      .stages(shader_stage_infos.as_slice())
-      .vertex_input_state(&vertex_input_info)
-      .input_assembly_state(&input_assembly_info)
-      .viewport_state(&viewport_info)
-      .rasterization_state(&rasterizer_info)
-      .multisample_state(&multisampler_info)
-      .color_blend_state(&colourblend_info)
-      .dynamic_state(&dynamic_state_info)
-      .layout(pipeline_layout)
-      .push_next(&mut rendering_info)
-      .subpass(0);
-
-    let graphics_pipeline = if swapchain.depth_stencil_format != vk::Format::UNDEFINED {
-      let depth_stencil_info = if !swapchain.has_stencil {
-        vk::PipelineDepthStencilStateCreateInfo::default()
-          .depth_test_enable(depth_info.test_enable)
-          .depth_write_enable(depth_info.write_enable)
-          .depth_compare_op(depth_info.compare_op.into())
-          .depth_bounds_test_enable(false)
-          .stencil_test_enable(false)
-          .front(Default::default())
-          .back(Default::default())
-        } else {
-          let stencil_info = stencil_info.ok_or(HalaGfxError::new("Stencil info is required.", None))?;
-          vk::PipelineDepthStencilStateCreateInfo::default()
-            .depth_test_enable(depth_info.test_enable)
-            .depth_write_enable(depth_info.write_enable)
-            .depth_compare_op(depth_info.compare_op.into())
-            .depth_bounds_test_enable(false)
-            .stencil_test_enable(stencil_info.test_enable)
-            .front(stencil_info.front.into())
-            .back(stencil_info.back.into())
-        };
-      let pipelines = unsafe {
-        logical_device.borrow().raw
-          .create_graphics_pipelines(
-            pipeline_cache.map_or(vk::PipelineCache::null(), |pc| pc.raw),
-            &[pipeline_info.depth_stencil_state(&depth_stencil_info)],
-            None,
-          )
-          .map_err(|err| HalaGfxError::new("Failed to create graphics pipeline", Some(Box::new(err.1))))?
-      };
-      pipelines.into_iter().next().ok_or(HalaGfxError::new("Failed to create graphics pipeline", None))?
-    } else {
-      let pipelines = unsafe {
-        logical_device.borrow().raw
-          .create_graphics_pipelines(
-            pipeline_cache.map_or(vk::PipelineCache::null(), |pc| pc.raw),
-            &[pipeline_info],
-            None,
-          )
-          .map_err(|err| HalaGfxError::new("Failed to create graphics pipeline", Some(Box::new(err.1))))?
-      };
-      pipelines.into_iter().next().ok_or(HalaGfxError::new("Failed to create graphics pipeline", None))?
-    };
-
-    logical_device.borrow().set_debug_name(
-      graphics_pipeline,
-      debug_name,
-    ).map_err(|err| HalaGfxError::new("Failed to set debug name for graphics pipeline.", Some(Box::new(err))))?;
-
-    Ok(graphics_pipeline)
+    Self::create_pipeline_with_format_and_size(
+      logical_device,
+      &[swapchain.desc.format],
+      Some(swapchain.depth_stencil_format),
+      swapchain.desc.dims.width,
+      swapchain.desc.dims.height,
+      flags,
+      vertex_attribute_descriptions,
+      vertex_binding_descriptions,
+      primitive_topology,
+      color_blend,
+      alpha_blend,
+      rasterizer_info,
+      depth_info,
+      stencil_info,
+      shaders,
+      dynamic_states,
+      pipeline_cache,
+      pipeline_layout,
+      debug_name
+    )
   }
 
   /// Create a graphics pipeline with specified render targets.
@@ -1839,8 +1801,77 @@ impl HalaGraphicsPipeline {
           VIBD: AsRef<HalaVertexInputBindingDescription>,
           S: AsRef<HalaShader>
   {
-    let has_depth = depth_image.is_some();
-    let has_stencil = depth_image.map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
+    Self::create_pipeline_with_format_and_size(
+      logical_device,
+      color_images.iter().map(|i| i.as_ref().format).collect::<Vec<_>>().as_slice(),
+      depth_image.map(|i| i.as_ref().format),
+      color_images[0].as_ref().extent.width,
+      color_images[0].as_ref().extent.height,
+      flags,
+      vertex_attribute_descriptions,
+      vertex_binding_descriptions,
+      primitive_topology,
+      color_blend,
+      alpha_blend,
+      rasterizer_info,
+      depth_info,
+      stencil_info,
+      shaders,
+      dynamic_states,
+      pipeline_cache,
+      pipeline_layout,
+      debug_name
+    )
+  }
+
+  /// Create a graphics pipeline with specified format and size.
+  /// param logical_device: The logical device.
+  /// param color_formats: The color formats.
+  /// param depth_format: The depth format.
+  /// param width: The width.
+  /// param height: The height.
+  /// param flags: The pipeline create flags.
+  /// param vertex_attribute_descriptions: The vertex attribute descriptions.
+  /// param vertex_binding_descriptions: The vertex binding descriptions.
+  /// param primitive_topology: The primitive topology.
+  /// param color_blend: The color blend(source, destination, operation).
+  /// param alpha_blend: The alpha blend(source, destination, operation).
+  /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// param depth_info: The depth info(test enable, write enable, compare operation).
+  /// param stencil_info: The stencil info(test enable, front, back).
+  /// param shaders: The shaders.
+  /// param dynamic_states: The dynamic states.
+  /// param pipeline_cache: The pipeline cache.
+  /// param pipeline_layout: The pipeline layout.
+  /// param debug_name: The debug name.
+  /// return: The graphics pipeline.
+  fn create_pipeline_with_format_and_size<VIAD, VIBD, S>(
+    logical_device: &Rc<RefCell<HalaLogicalDevice>>,
+    color_formats: &[HalaFormat],
+    depth_format: Option<HalaFormat>,
+    width: u32,
+    height: u32,
+    flags: HalaPipelineCreateFlags,
+    vertex_attribute_descriptions: &[VIAD],
+    vertex_binding_descriptions: &[VIBD],
+    primitive_topology: HalaPrimitiveTopology,
+    color_blend: &HalaBlendState,
+    alpha_blend: &HalaBlendState,
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
+    shaders: &[S],
+    dynamic_states: &[HalaDynamicState],
+    pipeline_cache: Option<&HalaPipelineCache>,
+    pipeline_layout: vk::PipelineLayout,
+    debug_name: &str,
+  ) -> Result<vk::Pipeline, HalaGfxError>
+    where VIAD: AsRef<HalaVertexInputAttributeDescription>,
+          VIBD: AsRef<HalaVertexInputBindingDescription>,
+          S: AsRef<HalaShader>
+  {
+    let has_depth = depth_format.is_some();
+    let has_stencil = depth_format.map_or(false, |fmt| fmt == HalaFormat::D16_UNORM_S8_UINT || fmt == HalaFormat::D24_UNORM_S8_UINT || fmt == HalaFormat::D32_SFLOAT_S8_UINT);
 
     let vertex_attribute_descriptions: Vec<vk::VertexInputAttributeDescription> = vertex_attribute_descriptions
       .iter()
@@ -1858,15 +1889,15 @@ impl HalaGraphicsPipeline {
 
     let viewports = [vk::Viewport {
       x: 0.,
-      y: color_images[0].as_ref().extent.height as f32,
-      width: color_images[0].as_ref().extent.width as f32,
-      height: -(color_images[0].as_ref().extent.height as f32),
+      y: height as f32,
+      width: width as f32,
+      height: -(height as f32),
       min_depth: 0.,
       max_depth: 1.,
     }];
     let scissors = [vk::Rect2D {
       offset: vk::Offset2D { x: 0, y: 0 },
-      extent: vk::Extent2D { width: color_images[0].as_ref().extent.width, height: color_images[0].as_ref().extent.height },
+      extent: vk::Extent2D { width, height },
     }];
     let viewport_info = vk::PipelineViewportStateCreateInfo::default()
       .viewports(&viewports)
@@ -1908,19 +1939,19 @@ impl HalaGraphicsPipeline {
       })
       .collect::<Vec<_>>();
 
-    let formats = color_images
+    let formats = color_formats
       .iter()
-      .map(|i| i.as_ref().format.into())
+      .map(|fmt| fmt.into())
       .collect::<Vec<vk::Format>>();
     let rendering_info = vk::PipelineRenderingCreateInfo::default()
       .color_attachment_formats(formats.as_slice());
     let rendering_info = if has_depth {
-      rendering_info.depth_attachment_format(depth_image.unwrap().as_ref().format.into())
+      rendering_info.depth_attachment_format(depth_format.unwrap().into())
     } else {
       rendering_info
     };
     let mut rendering_info = if has_stencil {
-      rendering_info.stencil_attachment_format(depth_image.unwrap().as_ref().format.into())
+      rendering_info.stencil_attachment_format(depth_format.unwrap().into())
     } else {
       rendering_info
     };
