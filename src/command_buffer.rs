@@ -1551,6 +1551,38 @@ impl HalaCommandBufferSet {
     }
   }
 
+  /// Copy buffer to buffer.
+  /// param index: The index of the command buffer.
+  /// param src_buffer: The source buffer.
+  /// param src_offset: The source offset.
+  /// param dst_buffer: The destination buffer.
+  /// param dst_offset: The destination offset.
+  pub fn copy_buffer_2_buffer(
+    &self,
+    index: usize,
+    src_buffer: &HalaBuffer,
+    src_offset: u64,
+    dst_buffer: &HalaBuffer,
+    dst_offset: u64,
+  ) {
+    let region = vk::BufferCopy2::default()
+      .size(src_buffer.size)
+      .src_offset(src_offset)
+      .dst_offset(dst_offset);
+    let copy_buffer_info = vk::CopyBufferInfo2::default()
+      .src_buffer(src_buffer.raw)
+      .dst_buffer(dst_buffer.raw)
+      .regions(std::slice::from_ref(&region));
+
+    unsafe {
+      let logical_device = self.logical_device.borrow();
+      logical_device.raw.cmd_copy_buffer2(
+        self.raw[index],
+        &copy_buffer_info,
+      );
+    }
+  }
+
   /// Begin a debug label.
   /// param index: The index of the command buffer.
   /// param name: The name of the label.
