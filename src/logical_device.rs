@@ -409,6 +409,7 @@ impl HalaLogicalDevice {
   /// param physical_device: The physical device.
   /// param surface: The surface.
   /// return: The queue family index and queue count pairs.
+  #[allow(clippy::type_complexity)]
   fn find_queue_family_indices(
     instance: &crate::HalaInstance,
     physical_device: &crate::HalaPhysicalDevice,
