@@ -581,6 +581,9 @@ impl HalaLogicalDevice {
     let mut shader_demote_to_helper_invocation_features =
       vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures::default()
         .shader_demote_to_helper_invocation(true);
+    let mut timeline_semaphore_features =
+      vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
+        .timeline_semaphore(true);
     let mut mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT::default()
       .mesh_shader(true)
       .task_shader(true)
@@ -605,7 +608,8 @@ impl HalaLogicalDevice {
       .push_next(&mut scalar_block_layout_features)
       .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features)
-      .push_next(&mut shader_demote_to_helper_invocation_features);
+      .push_next(&mut shader_demote_to_helper_invocation_features)
+      .push_next(&mut timeline_semaphore_features);
     if gpu_req.require_mesh_shader {
       features2 = features2
         .push_next(&mut mesh_shader_features)
