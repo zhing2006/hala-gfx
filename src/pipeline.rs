@@ -1530,8 +1530,8 @@ impl HalaGraphicsPipeline {
   /// vertex_binding_descriptions: The vertex binding descriptions.
   /// push_constant_ranges: The push constant ranges.
   /// primitive_topology: The primitive topology.
-  /// color_blend: The color blend(source, destination, operation).
-  /// alpha_blend: The alpha blend(source, destination, operation).
+  /// color_blends: The color blend(source, destination, operation).
+  /// alpha_blends: The alpha blend(source, destination, operation).
   /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// depth_info: The depth info(test enable, write enable, compare operation).
   /// stencil_info: The stencil info(test enable, front, back).
@@ -1540,7 +1540,7 @@ impl HalaGraphicsPipeline {
   /// pipeline_cache: The pipeline cache.
   /// debug_name: The debug name.
   /// return: The graphics pipeline.
-  pub fn with_rt<T, DSL, VIAD, VIBD, PCR, S>(
+  pub fn with_rt<T, DSL, VIAD, VIBD, PCR, BS, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
     depth_image: Option<&T>,
@@ -1550,8 +1550,8 @@ impl HalaGraphicsPipeline {
     vertex_binding_descriptions: &[VIBD],
     push_constant_ranges: &[PCR],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: &HalaBlendState,
-    alpha_blend: &HalaBlendState,
+    color_blends: &[BS],
+    alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
@@ -1565,6 +1565,7 @@ impl HalaGraphicsPipeline {
           VIAD: AsRef<HalaVertexInputAttributeDescription>,
           VIBD: AsRef<HalaVertexInputBindingDescription>,
           PCR: AsRef<HalaPushConstantRange>,
+          BS: AsRef<HalaBlendState>,
           S: AsRef<HalaShader>,
   {
     let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
@@ -1582,8 +1583,8 @@ impl HalaGraphicsPipeline {
       vertex_attribute_descriptions,
       vertex_binding_descriptions,
       primitive_topology,
-      color_blend,
-      alpha_blend,
+      color_blends,
+      alpha_blends,
       rasterizer_info,
       depth_info,
       stencil_info,
@@ -1617,8 +1618,8 @@ impl HalaGraphicsPipeline {
   /// vertex_binding_descriptions: The vertex binding descriptions.
   /// push_constant_ranges: The push constant ranges.
   /// primitive_topology: The primitive topology.
-  /// color_blend: The color blend(source, destination, operation).
-  /// alpha_blend: The alpha blend(source, destination, operation).
+  /// color_blends: The color blend(source, destination, operation).
+  /// alpha_blends: The alpha blend(source, destination, operation).
   /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// depth_info: The depth info(test enable, write enable, compare operation).
   /// stencil_info: The stencil info(test enable, front, back).
@@ -1627,7 +1628,7 @@ impl HalaGraphicsPipeline {
   /// pipeline_cache: The pipeline cache.
   /// debug_name: The debug name.
   /// return: The graphics pipeline.
-  pub fn with_format_and_size<DSL, VIAD, VIBD, PCR, S>(
+  pub fn with_format_and_size<DSL, VIAD, VIBD, PCR, BS, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_formats: &[HalaFormat],
     depth_format: Option<HalaFormat>,
@@ -1639,8 +1640,8 @@ impl HalaGraphicsPipeline {
     vertex_binding_descriptions: &[VIBD],
     push_constant_ranges: &[PCR],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: &HalaBlendState,
-    alpha_blend: &HalaBlendState,
+    color_blends: &[BS],
+    alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
@@ -1653,6 +1654,7 @@ impl HalaGraphicsPipeline {
           VIAD: AsRef<HalaVertexInputAttributeDescription>,
           VIBD: AsRef<HalaVertexInputBindingDescription>,
           PCR: AsRef<HalaPushConstantRange>,
+          BS: AsRef<HalaBlendState>,
           S: AsRef<HalaShader>,
   {
     let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
@@ -1672,8 +1674,8 @@ impl HalaGraphicsPipeline {
       vertex_attribute_descriptions,
       vertex_binding_descriptions,
       primitive_topology,
-      color_blend,
-      alpha_blend,
+      color_blends,
+      alpha_blends,
       rasterizer_info,
       depth_info,
       stencil_info,
@@ -1745,8 +1747,8 @@ impl HalaGraphicsPipeline {
       vertex_attribute_descriptions,
       vertex_binding_descriptions,
       primitive_topology,
-      color_blend,
-      alpha_blend,
+      &[color_blend],
+      &[alpha_blend],
       rasterizer_info,
       depth_info,
       stencil_info,
@@ -1766,8 +1768,8 @@ impl HalaGraphicsPipeline {
   /// param vertex_attribute_descriptions: The vertex attribute descriptions.
   /// param vertex_binding_descriptions: The vertex binding descriptions.
   /// param primitive_topology: The primitive topology.
-  /// param color_blend: The color blend(source, destination, operation).
-  /// param alpha_blend: The alpha blend(source, destination, operation).
+  /// param color_blends: The color blend(source, destination, operation).
+  /// param alpha_blends: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param stencil_info: The stencil info(test enable, front, back).
@@ -1777,7 +1779,7 @@ impl HalaGraphicsPipeline {
   /// param pipeline_layout: The pipeline layout.
   /// param debug_name: The debug name.
   /// return: The graphics pipeline.
-  fn create_pipeline_with_rt<T, VIAD, VIBD, S>(
+  fn create_pipeline_with_rt<T, VIAD, VIBD, BS, S>(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
     depth_image: Option<&T>,
@@ -1785,8 +1787,8 @@ impl HalaGraphicsPipeline {
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: &HalaBlendState,
-    alpha_blend: &HalaBlendState,
+    color_blends: &[BS],
+    alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
@@ -1799,6 +1801,7 @@ impl HalaGraphicsPipeline {
     where T: AsRef<HalaImage>,
           VIAD: AsRef<HalaVertexInputAttributeDescription>,
           VIBD: AsRef<HalaVertexInputBindingDescription>,
+          BS: AsRef<HalaBlendState>,
           S: AsRef<HalaShader>
   {
     Self::create_pipeline_with_format_and_size(
@@ -1811,8 +1814,8 @@ impl HalaGraphicsPipeline {
       vertex_attribute_descriptions,
       vertex_binding_descriptions,
       primitive_topology,
-      color_blend,
-      alpha_blend,
+      color_blends,
+      alpha_blends,
       rasterizer_info,
       depth_info,
       stencil_info,
@@ -1834,8 +1837,8 @@ impl HalaGraphicsPipeline {
   /// param vertex_attribute_descriptions: The vertex attribute descriptions.
   /// param vertex_binding_descriptions: The vertex binding descriptions.
   /// param primitive_topology: The primitive topology.
-  /// param color_blend: The color blend(source, destination, operation).
-  /// param alpha_blend: The alpha blend(source, destination, operation).
+  /// param color_blends: The color blend(source, destination, operation).
+  /// param alpha_blends: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param stencil_info: The stencil info(test enable, front, back).
@@ -1845,7 +1848,7 @@ impl HalaGraphicsPipeline {
   /// param pipeline_layout: The pipeline layout.
   /// param debug_name: The debug name.
   /// return: The graphics pipeline.
-  fn create_pipeline_with_format_and_size<VIAD, VIBD, S>(
+  fn create_pipeline_with_format_and_size<VIAD, VIBD, BS, S>(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     color_formats: &[HalaFormat],
     depth_format: Option<HalaFormat>,
@@ -1855,8 +1858,8 @@ impl HalaGraphicsPipeline {
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
     primitive_topology: HalaPrimitiveTopology,
-    color_blend: &HalaBlendState,
-    alpha_blend: &HalaBlendState,
+    color_blends: &[BS],
+    alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
@@ -1868,6 +1871,7 @@ impl HalaGraphicsPipeline {
   ) -> Result<vk::Pipeline, HalaGfxError>
     where VIAD: AsRef<HalaVertexInputAttributeDescription>,
           VIBD: AsRef<HalaVertexInputBindingDescription>,
+          BS: AsRef<HalaBlendState>,
           S: AsRef<HalaShader>
   {
     let has_depth = depth_format.is_some();
@@ -1912,19 +1916,21 @@ impl HalaGraphicsPipeline {
     let multisampler_info = vk::PipelineMultisampleStateCreateInfo::default()
       .rasterization_samples(vk::SampleCountFlags::TYPE_1);
 
-    let colourblend_attachments = [vk::PipelineColorBlendAttachmentState::default()
-      .blend_enable(true)
-      .src_color_blend_factor(color_blend.src_factor.into())
-      .dst_color_blend_factor(color_blend.dst_factor.into())
-      .color_blend_op(color_blend.op.into())
-      .src_alpha_blend_factor(alpha_blend.src_factor.into())
-      .dst_alpha_blend_factor(alpha_blend.dst_factor.into())
-      .alpha_blend_op(alpha_blend.op.into())
-      .color_write_mask(
-        vk::ColorComponentFlags::R | vk::ColorComponentFlags::G | vk::ColorComponentFlags::B | vk::ColorComponentFlags::A,
-      )];
-    let colourblend_info =
-      vk::PipelineColorBlendStateCreateInfo::default().attachments(&colourblend_attachments);
+    let color_blend_attachments = color_blends.iter().zip(alpha_blends).map(|(color_blend, alpha_blend)| {
+      vk::PipelineColorBlendAttachmentState::default()
+        .blend_enable(true)
+        .src_color_blend_factor(color_blend.as_ref().src_factor.into())
+        .dst_color_blend_factor(color_blend.as_ref().dst_factor.into())
+        .color_blend_op(color_blend.as_ref().op.into())
+        .src_alpha_blend_factor(alpha_blend.as_ref().src_factor.into())
+        .dst_alpha_blend_factor(alpha_blend.as_ref().dst_factor.into())
+        .alpha_blend_op(alpha_blend.as_ref().op.into())
+        .color_write_mask(
+          vk::ColorComponentFlags::R | vk::ColorComponentFlags::G | vk::ColorComponentFlags::B | vk::ColorComponentFlags::A,
+        )
+    }).collect::<Vec<_>>();
+    let color_blend_info =
+      vk::PipelineColorBlendStateCreateInfo::default().attachments(color_blend_attachments.as_slice());
 
     let main_func_name = std::ffi::CString::new("main")
       .map_err(|err| HalaGfxError::new("Failed to create \"main\" CString.", Some(Box::new(err))))?;
@@ -1971,7 +1977,7 @@ impl HalaGraphicsPipeline {
       .viewport_state(&viewport_info)
       .rasterization_state(&rasterizer_info)
       .multisample_state(&multisampler_info)
-      .color_blend_state(&colourblend_info)
+      .color_blend_state(&color_blend_info)
       .dynamic_state(&dynamic_state_info)
       .layout(pipeline_layout)
       .push_next(&mut rendering_info)
