@@ -400,30 +400,30 @@ impl HalaCommandBufferSet {
     &self,
     index: usize,
     color_images: &[T],
-    depth_image: Option<&T>,
+    depth_image: Option<T>,
     render_area: (i32, i32, u32, u32),
-    color_clear_values: Option<[f32; 4]>,
+    color_clear_values: &[Option<[f32; 4]>],
     depth_clear_value: Option<f32>,
     stencil_clear_value: Option<u32>,
   )
     where T: AsRef<HalaImage>
   {
     let has_depth = depth_image.is_some();
-    let has_stencil = depth_image.map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
+    let has_stencil = depth_image.as_ref().map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
 
-    let color_attachment_info = color_images.iter().map(|image| {
+    let color_attachment_info = color_images.iter().zip(color_clear_values).map(|(image, clear_value)| {
       vk::RenderingAttachmentInfo::default()
         .image_view(image.as_ref().view)
         .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-        .load_op(if color_clear_values.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+        .load_op(if clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
         .store_op(vk::AttachmentStoreOp::STORE)
         .clear_value(vk::ClearValue {
           color: vk::ClearColorValue {
-            float32: color_clear_values.unwrap_or([0f32; 4]),
+            float32: clear_value.unwrap_or([0f32; 4]),
           },
         })
     }).collect::<Vec<_>>();
-    let depth_image_view = depth_image.map_or(vk::ImageView::null(), |image| image.as_ref().view);
+    let depth_image_view = depth_image.as_ref().map_or(vk::ImageView::null(), |image| image.as_ref().view);
     let depth_attachment_info = vk::RenderingAttachmentInfo::default()
       .image_view(depth_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
