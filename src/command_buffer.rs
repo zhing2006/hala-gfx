@@ -314,7 +314,7 @@ impl HalaCommandBufferSet {
   /// param index: The index of the command buffer.
   /// param swapchain: The swapchain.
   /// param render_area: The render area(x, y, width, height).
-  /// param color_clear_values: The color clear values.
+  /// param color_clear_value: The color clear value.
   /// param depth_clear_value: The depth clear value.
   /// param stencil_clear_value: The stencil clear value.
   pub fn begin_rendering(
@@ -322,7 +322,7 @@ impl HalaCommandBufferSet {
     index: usize,
     swapchain: &HalaSwapchain,
     render_area: (i32, i32, u32, u32),
-    color_clear_values: Option<[f32; 4]>,
+    color_clear_value: Option<[f32; 4]>,
     depth_clear_value: Option<f32>,
     stencil_clear_value: Option<u32>,
   ) {
@@ -332,11 +332,11 @@ impl HalaCommandBufferSet {
     let color_attachment_info = vk::RenderingAttachmentInfo::default()
       .image_view(swapchain.image_views[index])
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-      .load_op(if color_clear_values.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+      .load_op(if color_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
       .store_op(vk::AttachmentStoreOp::STORE)
       .clear_value(vk::ClearValue {
         color: vk::ClearColorValue {
-          float32: color_clear_values.unwrap_or([0f32; 4]),
+          float32: color_clear_value.unwrap_or([0f32; 4]),
         },
       });
     let depth_attachment_info = vk::RenderingAttachmentInfo::default()

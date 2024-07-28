@@ -559,4 +559,30 @@ impl HalaDescriptorSet {
       self.logical_device.borrow().raw.update_descriptor_sets(&[descriptor_write], &[]);
     }
   }
+
+  /// Update the input attachments.
+  /// param index: The index.
+  /// param binding: The binding.
+  /// param images: The attachment's images.
+  pub fn update_input_attachments<T>(&self, index: usize, binding: u32, images: &[T])
+    where T: AsRef<crate::HalaImage>
+  {
+    let image_infos = images
+      .iter()
+      .map(|image| vk::DescriptorImageInfo::default()
+        .image_view(image.as_ref().view)
+        .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL))
+      .collect::<Vec<_>>();
+
+    let descriptor_write = vk::WriteDescriptorSet::default()
+      .dst_set(self.raw[index])
+      .dst_binding(binding)
+      .descriptor_type(vk::DescriptorType::INPUT_ATTACHMENT)
+      .image_info(image_infos.as_slice());
+
+    unsafe {
+      self.logical_device.borrow().raw.update_descriptor_sets(&[descriptor_write], &[]);
+    }
+  }
+
 }

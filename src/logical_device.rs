@@ -548,6 +548,7 @@ impl HalaLogicalDevice {
       ash::ext::shader_atomic_float::NAME.as_ptr(),
       ash::ext::shader_image_atomic_int64::NAME.as_ptr(),
       ash::khr::buffer_device_address::NAME.as_ptr(),
+      ash::khr::dynamic_rendering_local_read::NAME.as_ptr(),
     ];
     if !cfg!(debug_assertions) {
       // These extensions are cause nSight stop working.
@@ -582,6 +583,9 @@ impl HalaLogicalDevice {
     let mut shader_demote_to_helper_invocation_features =
       vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures::default()
         .shader_demote_to_helper_invocation(true);
+    let mut dynamic_rendering_local_read_features =
+      vk::PhysicalDeviceDynamicRenderingLocalReadFeaturesKHR::default()
+        .dynamic_rendering_local_read(true);
     let mut timeline_semaphore_features =
       vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
         .timeline_semaphore(true);
@@ -610,6 +614,7 @@ impl HalaLogicalDevice {
       .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features)
       .push_next(&mut shader_demote_to_helper_invocation_features)
+      .push_next(&mut dynamic_rendering_local_read_features)
       .push_next(&mut timeline_semaphore_features);
     if gpu_req.require_mesh_shader {
       features2 = features2
