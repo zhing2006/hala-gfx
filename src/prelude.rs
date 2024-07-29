@@ -11,7 +11,17 @@ pub use crate::logical_device::{
 };
 pub use crate::swapchain::HalaSwapchain;
 pub use crate::context::HalaContext;
-pub use crate::renderpass::HalaRenderPass;
+pub use crate::renderpass::{
+  HalaAttachmentLoadOp,
+  HalaAttachmentStoreOp,
+  HalaSampleCountFlags,
+  HalaAttachmentReference,
+  HalaPipelineBindPoint,
+  HalaDependencyFlags,
+  HalaAccessFlags,
+  HalaSubpassDependency,
+  HalaRenderPass,
+};
 pub use crate::frame_buffer::HalaFrameBufferSet;
 pub use crate::shader::{
   HalaShaderStageFlags,

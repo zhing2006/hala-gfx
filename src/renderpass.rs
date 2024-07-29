@@ -4,7 +4,11 @@ use std::cell::RefCell;
 use ash::vk;
 
 use crate::{
-  HalaFormat, HalaGfxError, HalaLogicalDevice
+  HalaFormat,
+  HalaGfxError,
+  HalaImageLayout,
+  HalaLogicalDevice,
+  HalaPipelineStageFlags,
 };
 
 /// The attachment load operation.
@@ -55,6 +59,7 @@ impl std::convert::From<HalaAttachmentStoreOp> for vk::AttachmentStoreOp {
 /// The sample count flags.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HalaSampleCountFlags(u32);
+crate::hala_bitflags_wrapped!(HalaSampleCountFlags, u32);
 
 /// The implementation of the sample count flags.
 impl HalaSampleCountFlags {
@@ -76,6 +81,171 @@ impl std::convert::From<vk::SampleCountFlags> for HalaSampleCountFlags {
 impl std::convert::From<HalaSampleCountFlags> for vk::SampleCountFlags {
   fn from(flags: HalaSampleCountFlags) -> Self {
     vk::SampleCountFlags::from_raw(flags.0)
+  }
+}
+
+/// The attachment reference information.
+#[repr(C)]
+#[cfg_attr(feature = "debug", derive(Debug))]
+#[derive(Copy, Clone, Default)]
+pub struct HalaAttachmentReference {
+  pub index: u32,
+  pub layout: HalaImageLayout,
+}
+
+impl std::convert::From<vk::AttachmentReference> for HalaAttachmentReference {
+  fn from(ref_info: vk::AttachmentReference) -> Self {
+    Self {
+      index: ref_info.attachment,
+      layout: ref_info.layout.into(),
+    }
+  }
+}
+
+impl std::convert::From<HalaAttachmentReference> for vk::AttachmentReference {
+  fn from(ref_info: HalaAttachmentReference) -> Self {
+    Self {
+      attachment: ref_info.index,
+      layout: ref_info.layout.into(),
+    }
+  }
+}
+
+/// The pipeline bind point.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct HalaPipelineBindPoint(i32);
+
+/// The implementation of the pipeline bind point.
+impl HalaPipelineBindPoint {
+  pub const GRAPHICS: Self = Self(vk::PipelineBindPoint::GRAPHICS.as_raw());
+  pub const COMPUTE: Self = Self(vk::PipelineBindPoint::COMPUTE.as_raw());
+  pub const RAY_TRACING: Self = Self(vk::PipelineBindPoint::RAY_TRACING_KHR.as_raw());
+}
+
+impl std::convert::From<vk::PipelineBindPoint> for HalaPipelineBindPoint {
+  fn from(bind_point: vk::PipelineBindPoint) -> Self {
+    Self(bind_point.as_raw())
+  }
+}
+
+impl std::convert::From<HalaPipelineBindPoint> for vk::PipelineBindPoint {
+  fn from(bind_point: HalaPipelineBindPoint) -> Self {
+    vk::PipelineBindPoint::from_raw(bind_point.0)
+  }
+}
+
+/// The dependency flags.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HalaDependencyFlags(u32);
+crate::hala_bitflags_wrapped!(HalaDependencyFlags, u32);
+impl HalaDependencyFlags {
+  pub const BY_REGION: Self = Self(vk::DependencyFlags::BY_REGION.as_raw());
+  pub const DEVICE_GROUP: Self = Self(vk::DependencyFlags::DEVICE_GROUP.as_raw());
+  pub const VIEW_LOCAL: Self = Self(vk::DependencyFlags::VIEW_LOCAL.as_raw());
+  pub const FEEDBACK_LOOP: Self = Self(vk::DependencyFlags::FEEDBACK_LOOP_EXT.as_raw());
+}
+
+impl std::convert::From<vk::DependencyFlags> for HalaDependencyFlags {
+  fn from(flags: vk::DependencyFlags) -> Self {
+    Self(flags.as_raw())
+  }
+}
+
+impl std::convert::From<HalaDependencyFlags> for vk::DependencyFlags {
+  fn from(flags: HalaDependencyFlags) -> Self {
+    vk::DependencyFlags::from_raw(flags.0)
+  }
+}
+
+/// The access flags.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HalaAccessFlags(u32);
+crate::hala_bitflags_wrapped!(HalaAccessFlags, u32);
+
+/// The implementation of the access flags.
+impl HalaAccessFlags {
+  pub const INDIRECT_COMMAND_READ: Self = Self(vk::AccessFlags::INDIRECT_COMMAND_READ.as_raw());
+  pub const INDEX_READ: Self = Self(vk::AccessFlags::INDEX_READ.as_raw());
+  pub const VERTEX_ATTRIBUTE_READ: Self = Self(vk::AccessFlags::VERTEX_ATTRIBUTE_READ.as_raw());
+  pub const UNIFORM_READ: Self = Self(vk::AccessFlags::UNIFORM_READ.as_raw());
+  pub const INPUT_ATTACHMENT_READ: Self = Self(vk::AccessFlags::INPUT_ATTACHMENT_READ.as_raw());
+  pub const SHADER_READ: Self = Self(vk::AccessFlags::SHADER_READ.as_raw());
+  pub const SHADER_WRITE: Self = Self(vk::AccessFlags::SHADER_WRITE.as_raw());
+  pub const COLOR_ATTACHMENT_READ: Self = Self(vk::AccessFlags::COLOR_ATTACHMENT_READ.as_raw());
+  pub const COLOR_ATTACHMENT_WRITE: Self = Self(vk::AccessFlags::COLOR_ATTACHMENT_WRITE.as_raw());
+  pub const DEPTH_STENCIL_ATTACHMENT_READ: Self = Self(vk::AccessFlags::DEPTH_STENCIL_ATTACHMENT_READ.as_raw());
+  pub const DEPTH_STENCIL_ATTACHMENT_WRITE: Self = Self(vk::AccessFlags::DEPTH_STENCIL_ATTACHMENT_WRITE.as_raw());
+  pub const TRANSFER_READ: Self = Self(vk::AccessFlags::TRANSFER_READ.as_raw());
+  pub const TRANSFER_WRITE: Self = Self(vk::AccessFlags::TRANSFER_WRITE.as_raw());
+  pub const HOST_READ: Self = Self(vk::AccessFlags::HOST_READ.as_raw());
+  pub const HOST_WRITE: Self = Self(vk::AccessFlags::HOST_WRITE.as_raw());
+  pub const MEMORY_READ: Self = Self(vk::AccessFlags::MEMORY_READ.as_raw());
+  pub const MEMORY_WRITE: Self = Self(vk::AccessFlags::MEMORY_WRITE.as_raw());
+  pub const TRANSFORM_FEEDBACK_WRITE: Self = Self(vk::AccessFlags::TRANSFORM_FEEDBACK_WRITE_EXT.as_raw());
+  pub const TRANSFORM_FEEDBACK_COUNTER_READ: Self = Self(vk::AccessFlags::TRANSFORM_FEEDBACK_COUNTER_READ_EXT.as_raw());
+  pub const TRANSFORM_FEEDBACK_COUNTER_WRITE: Self = Self(vk::AccessFlags::TRANSFORM_FEEDBACK_COUNTER_WRITE_EXT.as_raw());
+  pub const CONDITIONAL_RENDERING_READ: Self = Self(vk::AccessFlags::CONDITIONAL_RENDERING_READ_EXT.as_raw());
+  pub const COLOR_ATTACHMENT_READ_NONCOHERENT: Self = Self(vk::AccessFlags::COLOR_ATTACHMENT_READ_NONCOHERENT_EXT.as_raw());
+  pub const ACCELERATION_STRUCTURE_READ: Self = Self(vk::AccessFlags::ACCELERATION_STRUCTURE_READ_KHR.as_raw());
+  pub const ACCELERATION_STRUCTURE_WRITE: Self = Self(vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_KHR.as_raw());
+  pub const FRAGMENT_DENSITY_MAP_READ: Self = Self(vk::AccessFlags::FRAGMENT_DENSITY_MAP_READ_EXT.as_raw());
+  pub const FRAGMENT_SHADING_RATE_ATTACHMENT_READ: Self = Self(vk::AccessFlags::FRAGMENT_SHADING_RATE_ATTACHMENT_READ_KHR.as_raw());
+  pub const COMMAND_PREPROCESS_READ: Self = Self(vk::AccessFlags::COMMAND_PREPROCESS_READ_NV.as_raw());
+  pub const COMMAND_PREPROCESS_WRITE: Self = Self(vk::AccessFlags::COMMAND_PREPROCESS_WRITE_NV.as_raw());
+  pub const NONE: Self = Self(vk::AccessFlags::NONE.as_raw());
+}
+
+impl std::convert::From<vk::AccessFlags> for HalaAccessFlags {
+  fn from(flags: vk::AccessFlags) -> Self {
+    Self(flags.as_raw())
+  }
+}
+
+impl std::convert::From<HalaAccessFlags> for vk::AccessFlags {
+  fn from(flags: HalaAccessFlags) -> Self {
+    vk::AccessFlags::from_raw(flags.0)
+  }
+}
+
+/// The subpass dependency.
+#[repr(C)]
+#[cfg_attr(feature = "debug", derive(Debug))]
+#[derive(Copy, Clone, Default)]
+pub struct HalaSubpassDependency {
+  pub src_subpass: u32,
+  pub dst_subpass: u32,
+  pub src_stage_mask: HalaPipelineStageFlags,
+  pub dst_stage_mask: HalaPipelineStageFlags,
+  pub src_access_mask: HalaAccessFlags,
+  pub dst_access_mask: HalaAccessFlags,
+  pub dependency_flags: HalaDependencyFlags,
+}
+
+impl std::convert::From<vk::SubpassDependency> for HalaSubpassDependency {
+  fn from(dep: vk::SubpassDependency) -> Self {
+    Self {
+      src_subpass: dep.src_subpass,
+      dst_subpass: dep.dst_subpass,
+      src_stage_mask: dep.src_stage_mask.into(),
+      dst_stage_mask: dep.dst_stage_mask.into(),
+      src_access_mask: dep.src_access_mask.into(),
+      dst_access_mask: dep.dst_access_mask.into(),
+      dependency_flags: dep.dependency_flags.into(),
+    }
+  }
+}
+
+impl std::convert::From<HalaSubpassDependency> for vk::SubpassDependency {
+  fn from(dep: HalaSubpassDependency) -> Self {
+    Self {
+      src_subpass: dep.src_subpass,
+      dst_subpass: dep.dst_subpass,
+      src_stage_mask: dep.src_stage_mask.into(),
+      dst_stage_mask: dep.dst_stage_mask.into(),
+      src_access_mask: dep.src_access_mask.into(),
+      dst_access_mask: dep.dst_access_mask.into(),
+      dependency_flags: dep.dependency_flags.into(),
+    }
   }
 }
 
