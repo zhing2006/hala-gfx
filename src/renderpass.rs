@@ -337,8 +337,8 @@ impl HalaRenderPass {
       depth_store_op,
       stencil_load_op,
       stencil_store_op,
-      subpasses,
-      subpass_deps,
+      subpasses.as_slice(),
+      subpass_deps.as_slice(),
       debug_name,
     )?;
 
@@ -379,8 +379,8 @@ impl HalaRenderPass {
     depth_store_op: Option<HalaAttachmentStoreOp>,
     stencil_load_op: Option<HalaAttachmentLoadOp>,
     stencil_store_op: Option<HalaAttachmentStoreOp>,
-    subpasses: Vec<HalaSubpassDescription>,
-    subpass_deps: Vec<HalaSubpassDependency>,
+    subpasses: &[HalaSubpassDescription],
+    subpass_deps: &[HalaSubpassDependency],
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
     let (
@@ -440,8 +440,8 @@ impl HalaRenderPass {
     depth_store_op: Option<HalaAttachmentStoreOp>,
     stencil_load_op: Option<HalaAttachmentLoadOp>,
     stencil_store_op: Option<HalaAttachmentStoreOp>,
-    subpasses: Vec<HalaSubpassDescription>,
-    subpass_deps: Vec<HalaSubpassDependency>,
+    subpasses: &[HalaSubpassDescription],
+    subpass_deps: &[HalaSubpassDependency],
     debug_name: &str,
   ) -> Result<(
     Vec<HalaRenderPassAttachmentDesc>,

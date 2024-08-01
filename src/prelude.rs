@@ -1,3 +1,4 @@
+pub use crate::constants::*;
 pub use crate::error::HalaGfxError;
 pub use crate::instance::HalaInstance;
 pub use crate::physical_device::{
@@ -19,6 +20,7 @@ pub use crate::renderpass::{
   HalaDependencyFlags,
   HalaAccessFlags,
   HalaSubpassDependency,
+  HalaSubpassDescription,
   HalaRenderPass,
 };
 pub use crate::frame_buffer::HalaFrameBufferSet;
