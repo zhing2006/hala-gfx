@@ -276,7 +276,7 @@ impl HalaCommandBufferSet {
         },
       }
     ];
-    if render_pass.depth_attachment_desc.is_some() {
+    if !render_pass.depth_attachment_descs.is_empty() {
       clear_values.push(
         vk::ClearValue {
           depth_stencil: vk::ClearDepthStencilValue {

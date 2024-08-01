@@ -19,6 +19,7 @@ pub use crate::renderpass::{
   HalaPipelineBindPoint,
   HalaDependencyFlags,
   HalaAccessFlags,
+  HalaAttachmentReference,
   HalaSubpassDependency,
   HalaSubpassDescription,
   HalaRenderPass,
