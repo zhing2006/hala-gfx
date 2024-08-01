@@ -79,6 +79,113 @@ impl std::convert::From<HalaCommandBufferUsageFlags> for vk::CommandBufferUsageF
   }
 }
 
+/// The color clear value.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union HalaClearColorValue {
+  pub float32: [f32; 4],
+  pub int32: [i32; 4],
+  pub uint32: [u32; 4],
+}
+
+impl Default for HalaClearColorValue {
+  fn default() -> Self {
+    Self {
+      float32: [0f32; 4],
+    }
+  }
+}
+
+impl std::convert::From<HalaClearColorValue> for vk::ClearColorValue {
+  fn from(value: HalaClearColorValue) -> Self {
+    unsafe {
+      vk::ClearColorValue {
+        float32: value.float32,
+      }
+    }
+  }
+}
+
+impl std::convert::From<vk::ClearColorValue> for HalaClearColorValue {
+  fn from(value: vk::ClearColorValue) -> Self {
+    unsafe {
+      HalaClearColorValue {
+        float32: value.float32,
+      }
+    }
+  }
+}
+
+/// The depth and stencil clear value.
+#[repr(C)]
+#[derive(Copy, Clone, Default)]
+pub struct HalaClearDepthStencilValue {
+  pub depth: f32,
+  pub stencil: u32,
+}
+
+impl std::convert::From<HalaClearDepthStencilValue> for vk::ClearDepthStencilValue {
+  fn from(value: HalaClearDepthStencilValue) -> Self {
+    vk::ClearDepthStencilValue {
+      depth: value.depth,
+      stencil: value.stencil,
+    }
+  }
+}
+
+impl std::convert::From<vk::ClearDepthStencilValue> for HalaClearDepthStencilValue {
+  fn from(value: vk::ClearDepthStencilValue) -> Self {
+    HalaClearDepthStencilValue {
+      depth: value.depth,
+      stencil: value.stencil,
+    }
+  }
+}
+
+/// The clear value.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union HalaClearValue {
+  pub color: HalaClearColorValue,
+  pub depth_stencil: HalaClearDepthStencilValue,
+}
+
+impl std::convert::From<&HalaClearValue> for vk::ClearValue {
+  fn from(value: &HalaClearValue) -> Self {
+    unsafe {
+      vk::ClearValue {
+        color: vk::ClearColorValue {
+          float32: value.color.float32,
+        },
+      }
+    }
+  }
+}
+
+impl std::convert::From<HalaClearValue> for vk::ClearValue {
+  fn from(value: HalaClearValue) -> Self {
+    (&value).into()
+  }
+}
+
+impl std::convert::From<&vk::ClearValue> for HalaClearValue {
+  fn from(value: &vk::ClearValue) -> Self {
+    unsafe {
+      HalaClearValue {
+        color: HalaClearColorValue {
+          float32: value.color.float32,
+        },
+      }
+    }
+  }
+}
+
+impl std::convert::From<vk::ClearValue> for HalaClearValue {
+  fn from(value: vk::ClearValue) -> Self {
+    (&value).into()
+  }
+}
+
 /// The subpass contents.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaSubpassContents(i32);
@@ -265,27 +372,12 @@ impl HalaCommandBufferSet {
     render_pass: &HalaRenderPass,
     framebuffers: &HalaFrameBufferSet,
     render_area: (i32, i32, u32, u32),
-    clear_values: ([f32; 4], f32, u32),
+    clear_values: &[HalaClearValue],
     subpass_contents: HalaSubpassContents,
   ) {
-    let (clear_color, depth_clear_value, stencil_clear_value) = clear_values;
-    let mut clear_values = vec![
-      vk::ClearValue {
-        color: vk::ClearColorValue {
-          float32: [clear_color[0], clear_color[1], clear_color[2], clear_color[3]],
-        },
-      }
-    ];
-    if !render_pass.depth_attachment_descs.is_empty() {
-      clear_values.push(
-        vk::ClearValue {
-          depth_stencil: vk::ClearDepthStencilValue {
-            depth: depth_clear_value,
-            stencil: stencil_clear_value,
-          },
-        }
-      );
-    }
+    assert!(render_pass.color_attachment_descs.len() + render_pass.depth_attachment_descs.len() == clear_values.len());
+
+    let vk_clear_values = clear_values.iter().map(|clear_value| clear_value.into()).collect::<Vec<_>>();
     let render_pass_begin_info = vk::RenderPassBeginInfo::default()
       .render_pass(render_pass.raw)
       .framebuffer(framebuffers.raw[index])
@@ -293,7 +385,7 @@ impl HalaCommandBufferSet {
         offset: vk::Offset2D { x: render_area.0, y: render_area.1 },
         extent: vk::Extent2D { width: render_area.2, height: render_area.3 },
       })
-      .clear_values(&clear_values);
+      .clear_values(vk_clear_values.as_slice());
 
     unsafe {
       let logical_device = self.logical_device.borrow();

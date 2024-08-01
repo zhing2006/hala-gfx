@@ -67,6 +67,9 @@ pub use crate::command_buffer::{
   HalaCommandBufferType,
   HalaCommandBufferLevel,
   HalaCommandBufferUsageFlags,
+  HalaClearColorValue,
+  HalaClearDepthStencilValue,
+  HalaClearValue,
   HalaSubpassContents,
   HalaCommandBufferSet,
 };
