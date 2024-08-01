@@ -14,6 +14,7 @@ use crate::{
   HalaImage,
   HalaLogicalDevice,
   HalaPipelineCache,
+  HalaRenderPass,
   HalaShader,
   HalaShaderStageFlags,
   HalaSwapchain
@@ -1506,6 +1507,8 @@ impl HalaGraphicsPipeline {
       dynamic_states,
       pipeline_cache,
       pipeline_layout,
+      None,
+      0,
       debug_name
     )?;
 
@@ -1592,6 +1595,8 @@ impl HalaGraphicsPipeline {
       dynamic_states,
       pipeline_cache,
       pipeline_layout,
+      None,
+      0,
       debug_name
     )?;
 
@@ -1657,6 +1662,87 @@ impl HalaGraphicsPipeline {
           BS: AsRef<HalaBlendState>,
           S: AsRef<HalaShader>,
   {
+    Self::with_renderpass_format_and_size(
+      logical_device,
+      color_formats,
+      depth_format,
+      width,
+      height,
+      descriptor_set_layouts,
+      flags,
+      vertex_attribute_descriptions,
+      vertex_binding_descriptions,
+      push_constant_ranges,
+      primitive_topology,
+      color_blends,
+      alpha_blends,
+      rasterizer_info,
+      depth_info,
+      stencil_info,
+      shaders,
+      dynamic_states,
+      None,
+      0,
+      pipeline_cache,
+      debug_name
+    )
+  }
+
+  /// Create a graphics pipeline with specified render pass, formats and size.
+  /// param logical_device: The logical device.
+  /// color_formats: The color formats.
+  /// depth_format: The depth format.
+  /// width: The width.
+  /// height: The height.
+  /// descriptor_set_layouts: The descriptor set layouts.
+  /// flags: The pipeline create flags.
+  /// vertex_attribute_descriptions: The vertex attribute descriptions.
+  /// vertex_binding_descriptions: The vertex binding descriptions.
+  /// push_constant_ranges: The push constant ranges.
+  /// primitive_topology: The primitive topology.
+  /// color_blends: The color blend(source, destination, operation).
+  /// alpha_blends: The alpha blend(source, destination, operation).
+  /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// depth_info: The depth info(test enable, write enable, compare operation).
+  /// stencil_info: The stencil info(test enable, front, back).
+  /// shaders: The shaders.
+  /// dynamic_states: The dynamic states.
+  /// render_pass: The render pass.
+  /// subpass_index: The subpass index.
+  /// pipeline_cache: The pipeline cache.
+  /// debug_name: The debug name.
+  /// return: The graphics pipeline.
+  pub fn with_renderpass_format_and_size<DSL, VIAD, VIBD, PCR, BS, S>(
+    logical_device: Rc<RefCell<HalaLogicalDevice>>,
+    color_formats: &[HalaFormat],
+    depth_format: Option<HalaFormat>,
+    width: u32,
+    height: u32,
+    descriptor_set_layouts: &[DSL],
+    flags: HalaPipelineCreateFlags,
+    vertex_attribute_descriptions: &[VIAD],
+    vertex_binding_descriptions: &[VIBD],
+    push_constant_ranges: &[PCR],
+    primitive_topology: HalaPrimitiveTopology,
+    color_blends: &[BS],
+    alpha_blends: &[BS],
+    rasterizer_info: &HalaRasterizerState,
+    depth_info: &HalaDepthState,
+    stencil_info: Option<&HalaStencilState>,
+    shaders: &[S],
+    dynamic_states: &[HalaDynamicState],
+    render_pass: Option<HalaRenderPass>,
+    subpass_index: u32,
+    pipeline_cache: Option<&HalaPipelineCache>,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError>
+    where DSL: AsRef<HalaDescriptorSetLayout>,
+          VIAD: AsRef<HalaVertexInputAttributeDescription>,
+          VIBD: AsRef<HalaVertexInputBindingDescription>,
+          PCR: AsRef<HalaPushConstantRange>,
+          BS: AsRef<HalaBlendState>,
+          S: AsRef<HalaShader>,
+  {
     let pipeline_layout = HalaPipelineBase::create_pipeline_layout(
       &logical_device,
       push_constant_ranges,
@@ -1683,6 +1769,8 @@ impl HalaGraphicsPipeline {
       dynamic_states,
       pipeline_cache,
       pipeline_layout,
+      render_pass,
+      subpass_index,
       debug_name
     )?;
 
@@ -1713,6 +1801,8 @@ impl HalaGraphicsPipeline {
   /// param dynamic_states: The dynamic states.
   /// param pipeline_cache: The pipeline cache.
   /// param pipeline_layout: The pipeline layout.
+  /// param render_pass: The render pass.
+  /// param subpass_index: The subpass index.
   /// param debug_name: The debug name.
   /// return: The graphics pipeline.
   fn create_pipeline<VIAD, VIBD, S>(
@@ -1731,6 +1821,8 @@ impl HalaGraphicsPipeline {
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
+    render_pass: Option<HalaRenderPass>,
+    subpass_index: u32,
     debug_name: &str,
   ) -> Result<vk::Pipeline, HalaGfxError>
     where VIAD: AsRef<HalaVertexInputAttributeDescription>,
@@ -1756,6 +1848,8 @@ impl HalaGraphicsPipeline {
       dynamic_states,
       pipeline_cache,
       pipeline_layout,
+      render_pass,
+      subpass_index,
       debug_name
     )
   }
@@ -1777,6 +1871,8 @@ impl HalaGraphicsPipeline {
   /// param dynamic_states: The dynamic states.
   /// param pipeline_cache: The pipeline cache.
   /// param pipeline_layout: The pipeline layout.
+  /// param render_pass: The render pass.
+  /// param subpass_index: The subpass index.
   /// param debug_name: The debug name.
   /// return: The graphics pipeline.
   fn create_pipeline_with_rt<T, VIAD, VIBD, BS, S>(
@@ -1796,6 +1892,8 @@ impl HalaGraphicsPipeline {
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
+    render_pass: Option<HalaRenderPass>,
+    subpass_index: u32,
     debug_name: &str,
   ) -> Result<vk::Pipeline, HalaGfxError>
     where T: AsRef<HalaImage>,
@@ -1823,6 +1921,8 @@ impl HalaGraphicsPipeline {
       dynamic_states,
       pipeline_cache,
       pipeline_layout,
+      render_pass,
+      subpass_index,
       debug_name
     )
   }
@@ -1846,6 +1946,8 @@ impl HalaGraphicsPipeline {
   /// param dynamic_states: The dynamic states.
   /// param pipeline_cache: The pipeline cache.
   /// param pipeline_layout: The pipeline layout.
+  /// param render_pass: The render pass.
+  /// param subpass_index: The subpass index.
   /// param debug_name: The debug name.
   /// return: The graphics pipeline.
   fn create_pipeline_with_format_and_size<VIAD, VIBD, BS, S>(
@@ -1867,6 +1969,8 @@ impl HalaGraphicsPipeline {
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
+    render_pass: Option<HalaRenderPass>,
+    subpass_index: u32,
     debug_name: &str,
   ) -> Result<vk::Pipeline, HalaGfxError>
     where VIAD: AsRef<HalaVertexInputAttributeDescription>,
@@ -1980,8 +2084,15 @@ impl HalaGraphicsPipeline {
       .color_blend_state(&color_blend_info)
       .dynamic_state(&dynamic_state_info)
       .layout(pipeline_layout)
-      .push_next(&mut rendering_info)
-      .subpass(0);
+      .push_next(&mut rendering_info);
+    let pipeline_info = if let Some(rp) = render_pass {
+      pipeline_info
+        .render_pass(rp.raw)
+        .subpass(subpass_index)
+    } else {
+      pipeline_info
+        .subpass(0)
+    };
 
     let graphics_pipeline = if has_depth {
       let depth_stencil_info = if !has_stencil {
