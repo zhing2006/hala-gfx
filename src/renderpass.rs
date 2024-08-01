@@ -316,6 +316,7 @@ impl HalaRenderPass {
   /// param stencil_store_op: The stencil store operation.
   /// param debug_name: The debug name.
   /// return: The render pass.
+  #[allow(clippy::too_many_arguments)]
   pub fn new(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_formats: &[HalaFormat],
@@ -417,6 +418,7 @@ impl HalaRenderPass {
   /// param subpass_deps: The subpass dependencies.
   /// param debug_name: The debug name.
   /// return: The render pass.
+  #[allow(clippy::too_many_arguments)]
   pub fn with_subpasses(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_formats: &[HalaFormat],
@@ -470,6 +472,7 @@ impl HalaRenderPass {
   /// param subpass_deps: The subpass dependencies.
   /// param debug_name: The debug name.
   /// return: The render pass.
+  #[allow(clippy::too_many_arguments)]
   fn create_render_pass(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     color_formats: &[HalaFormat],
@@ -492,9 +495,9 @@ impl HalaRenderPass {
     let color_attachment_descs = color_formats.iter().zip(color_load_ops.iter()).zip(color_store_ops.iter())
       .map(|((&format, &load_op), &store_op)| {
         HalaRenderPassAttachmentDesc {
-          format: format,
-          load_op: load_op,
-          store_op: store_op,
+          format,
+          load_op,
+          store_op,
           samples: HalaSampleCountFlags::TYPE_1,
           ..Default::default()
         }
@@ -503,9 +506,9 @@ impl HalaRenderPass {
     let depth_stencil_attachment_descs = depth_stencil_formats.iter().zip(depth_stencil_load_ops.iter()).zip(depth_stencil_store_ops.iter())
       .map(|((&format, &(load_op, stencil_load_op)), &(store_op, stencil_store_op))| {
         HalaRenderPassAttachmentDesc {
-          format: format,
-          load_op: load_op,
-          store_op: store_op,
+          format,
+          load_op,
+          store_op,
           stencil_load_op: stencil_load_op.unwrap_or(HalaAttachmentLoadOp::DONT_CARE),
           stencil_store_op: stencil_store_op.unwrap_or(HalaAttachmentStoreOp::DONT_CARE),
           samples: HalaSampleCountFlags::TYPE_1,
@@ -594,7 +597,7 @@ impl HalaRenderPass {
           vk_subpass
         };
         let vk_subpass = if desc.depth_stencil_attachment.is_some() {
-          vk_subpass.depth_stencil_attachment(&depth_stencil_attachment_ref)
+          vk_subpass.depth_stencil_attachment(depth_stencil_attachment_ref)
         } else {
           vk_subpass
         };
