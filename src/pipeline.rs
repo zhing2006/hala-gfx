@@ -1731,7 +1731,7 @@ impl HalaGraphicsPipeline {
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
     dynamic_states: &[HalaDynamicState],
-    render_pass: Option<HalaRenderPass>,
+    render_pass: Option<&HalaRenderPass>,
     subpass_index: u32,
     pipeline_cache: Option<&HalaPipelineCache>,
     debug_name: &str,
@@ -1821,7 +1821,7 @@ impl HalaGraphicsPipeline {
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
-    render_pass: Option<HalaRenderPass>,
+    render_pass: Option<&HalaRenderPass>,
     subpass_index: u32,
     debug_name: &str,
   ) -> Result<vk::Pipeline, HalaGfxError>
@@ -1892,7 +1892,7 @@ impl HalaGraphicsPipeline {
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
-    render_pass: Option<HalaRenderPass>,
+    render_pass: Option<&HalaRenderPass>,
     subpass_index: u32,
     debug_name: &str,
   ) -> Result<vk::Pipeline, HalaGfxError>
@@ -1969,7 +1969,7 @@ impl HalaGraphicsPipeline {
     dynamic_states: &[HalaDynamicState],
     pipeline_cache: Option<&HalaPipelineCache>,
     pipeline_layout: vk::PipelineLayout,
-    render_pass: Option<HalaRenderPass>,
+    render_pass: Option<&HalaRenderPass>,
     subpass_index: u32,
     debug_name: &str,
   ) -> Result<vk::Pipeline, HalaGfxError>
