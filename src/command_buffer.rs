@@ -310,6 +310,16 @@ impl HalaCommandBufferSet {
     }
   }
 
+  /// Translates to the next subpass.
+  /// param index: The index of the command buffer.
+  /// param contents: The subpass contents.
+  pub fn next_subpass(&self, index: usize, contents: HalaSubpassContents) {
+    let logical_device = self.logical_device.borrow();
+    unsafe {
+      logical_device.raw.cmd_next_subpass(self.raw[index], contents.into());
+    }
+  }
+
   /// Begin rendering.
   /// param index: The index of the command buffer.
   /// param swapchain: The swapchain.
