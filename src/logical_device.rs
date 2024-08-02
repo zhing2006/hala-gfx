@@ -548,14 +548,14 @@ impl HalaLogicalDevice {
       ash::ext::shader_atomic_float::NAME.as_ptr(),
       ash::ext::shader_image_atomic_int64::NAME.as_ptr(),
       ash::khr::buffer_device_address::NAME.as_ptr(),
-      ash::khr::dynamic_rendering_local_read::NAME.as_ptr(),
     ];
     if !cfg!(debug_assertions) {
-      // These extensions are cause nSight stop working.
+      // These extensions will cause nSight stop working.
       // So only enable them in release mode.
       extension_name_ptrs.push(ash::khr::maintenance5::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::maintenance6::NAME.as_ptr());
       extension_name_ptrs.push(ash::khr::shader_float_controls2::NAME.as_ptr());
+      extension_name_ptrs.push(ash::khr::dynamic_rendering_local_read::NAME.as_ptr());
     };
     if gpu_req.require_mesh_shader {
       extension_name_ptrs.push(ash::ext::mesh_shader::NAME.as_ptr());
@@ -614,8 +614,13 @@ impl HalaLogicalDevice {
       .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features)
       .push_next(&mut shader_demote_to_helper_invocation_features)
-      .push_next(&mut dynamic_rendering_local_read_features)
       .push_next(&mut timeline_semaphore_features);
+    if !cfg!(debug_assertions) {
+      // These features will cause nSight stop working.
+      // So only enable them in release mode.
+      features2 = features2
+        .push_next(&mut dynamic_rendering_local_read_features);
+    }
     if gpu_req.require_mesh_shader {
       features2 = features2
         .push_next(&mut mesh_shader_features)
