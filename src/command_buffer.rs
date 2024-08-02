@@ -386,19 +386,22 @@ impl HalaCommandBufferSet {
         extent: vk::Extent2D { width: render_area.2, height: render_area.3 },
       })
       .clear_values(vk_clear_values.as_slice());
+    let subpass_begin_info = vk::SubpassBeginInfo::default()
+      .contents(subpass_contents.into());
 
     unsafe {
       let logical_device = self.logical_device.borrow();
-      logical_device.raw.cmd_begin_render_pass(self.raw[index], &render_pass_begin_info, subpass_contents.into());
+      logical_device.raw.cmd_begin_render_pass2(self.raw[index], &render_pass_begin_info, &subpass_begin_info);
     }
   }
 
   /// End the render pass.
   /// param index: The index of the command buffer.
   pub fn end_render_pass(&self, index: usize) {
+    let subpass_end_info = vk::SubpassEndInfo::default();
     let logical_device = self.logical_device.borrow();
     unsafe {
-      logical_device.raw.cmd_end_render_pass(self.raw[index]);
+      logical_device.raw.cmd_end_render_pass2(self.raw[index], &subpass_end_info);
     }
   }
 
@@ -406,9 +409,16 @@ impl HalaCommandBufferSet {
   /// param index: The index of the command buffer.
   /// param contents: The subpass contents.
   pub fn next_subpass(&self, index: usize, contents: HalaSubpassContents) {
+    let subpass_begin_info = vk::SubpassBeginInfo::default()
+      .contents(contents.into());
+    let subpass_end_info = vk::SubpassEndInfo::default();
     let logical_device = self.logical_device.borrow();
     unsafe {
-      logical_device.raw.cmd_next_subpass(self.raw[index], contents.into());
+      logical_device.raw.cmd_next_subpass2(
+        self.raw[index],
+        &subpass_begin_info,
+        &subpass_end_info,
+      );
     }
   }
 
