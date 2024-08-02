@@ -375,7 +375,7 @@ impl HalaCommandBufferSet {
     clear_values: &[HalaClearValue],
     subpass_contents: HalaSubpassContents,
   ) {
-    assert!(render_pass.color_attachment_descs.len() + render_pass.depth_attachment_descs.len() == clear_values.len());
+    assert!(render_pass.color_attachment_descs.len() + render_pass.depth_stencil_attachment_descs.len() == clear_values.len());
 
     let vk_clear_values = clear_values.iter().map(|clear_value| clear_value.into()).collect::<Vec<_>>();
     let render_pass_begin_info = vk::RenderPassBeginInfo::default()

@@ -260,6 +260,7 @@ pub struct HalaSubpassDescription {
 }
 
 /// The description of a render pass attachment.
+#[derive(Clone)]
 pub struct HalaRenderPassAttachmentDesc {
   pub format: HalaFormat,
   pub load_op: HalaAttachmentLoadOp,
@@ -267,6 +268,8 @@ pub struct HalaRenderPassAttachmentDesc {
   pub stencil_load_op: HalaAttachmentLoadOp,
   pub stencil_store_op: HalaAttachmentStoreOp,
   pub samples: HalaSampleCountFlags,
+  pub initial_layout: HalaImageLayout,
+  pub final_layout: HalaImageLayout,
 }
 
 impl Default for HalaRenderPassAttachmentDesc {
@@ -278,7 +281,51 @@ impl Default for HalaRenderPassAttachmentDesc {
       stencil_load_op: HalaAttachmentLoadOp::DONT_CARE,
       stencil_store_op: HalaAttachmentStoreOp::DONT_CARE,
       samples: HalaSampleCountFlags::TYPE_1,
+      initial_layout: HalaImageLayout::UNDEFINED,
+      final_layout: HalaImageLayout::GENERAL,
     }
+  }
+}
+
+impl HalaRenderPassAttachmentDesc {
+  pub fn format(mut self, format: HalaFormat) -> Self {
+    self.format = format;
+    self
+  }
+
+  pub fn load_op(mut self, load_op: HalaAttachmentLoadOp) -> Self {
+    self.load_op = load_op;
+    self
+  }
+
+  pub fn store_op(mut self, store_op: HalaAttachmentStoreOp) -> Self {
+    self.store_op = store_op;
+    self
+  }
+
+  pub fn stencil_load_op(mut self, stencil_load_op: HalaAttachmentLoadOp) -> Self {
+    self.stencil_load_op = stencil_load_op;
+    self
+  }
+
+  pub fn stencil_store_op(mut self, stencil_store_op: HalaAttachmentStoreOp) -> Self {
+    self.stencil_store_op = stencil_store_op;
+    self
+  }
+
+  pub fn samples(mut self, samples: HalaSampleCountFlags) -> Self {
+    self.samples = samples;
+    self
+  }
+
+  pub fn initial_layout(mut self, initial_layout: HalaImageLayout) -> Self {
+    self.initial_layout = initial_layout;
+    self
+  }
+
+  pub fn final_layout(mut self, final_layout: HalaImageLayout) -> Self {
+    self.final_layout = final_layout;
+    self
   }
 }
 
@@ -287,7 +334,7 @@ pub struct HalaRenderPass {
   pub(crate) logical_device: Rc<RefCell<HalaLogicalDevice>>,
   pub raw: vk::RenderPass,
   pub color_attachment_descs: Vec<HalaRenderPassAttachmentDesc>,
-  pub depth_attachment_descs: Vec<HalaRenderPassAttachmentDesc>,
+  pub depth_stencil_attachment_descs: Vec<HalaRenderPassAttachmentDesc>,
   pub debug_name: String,
 }
 
@@ -302,45 +349,33 @@ impl Drop for HalaRenderPass {
 }
 
 /// The implementation of the render pass.
+#[allow(clippy::too_many_arguments)]
 impl HalaRenderPass {
 
   /// Create a new render pass.
   /// param logical_device: The logical device.
-  /// param color_formats: The color formats.
-  /// param color_load_ops: The color load operations.
-  /// param color_store_ops: The color store operations.
-  /// param depth_format: The depth format.
-  /// param depth_load_op: The depth load operation.
-  /// param depth_store_op: The depth store operation.
-  /// param stencil_load_op: The stencil load operation.
-  /// param stencil_store_op: The stencil store operation.
+  /// param color_attachment_descs: The color attachment descriptions.
+  /// param depth_stencil_attachment_descs: The depth and stencil attachment descriptions.
   /// param debug_name: The debug name.
   /// return: The render pass.
-  #[allow(clippy::too_many_arguments)]
   pub fn new(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
-    color_formats: &[HalaFormat],
-    color_load_ops: &[HalaAttachmentLoadOp],
-    color_store_ops: &[HalaAttachmentStoreOp],
-    depth_format: Option<HalaFormat>,
-    depth_load_op: Option<HalaAttachmentLoadOp>,
-    depth_store_op: Option<HalaAttachmentStoreOp>,
-    stencil_load_op: Option<HalaAttachmentLoadOp>,
-    stencil_store_op: Option<HalaAttachmentStoreOp>,
+    color_attachment_descs: &[HalaRenderPassAttachmentDesc],
+    depth_stencil_attachment_descs: Option<&[HalaRenderPassAttachmentDesc]>,
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
-    let subpasses = if depth_format.is_some() {
+    let subpasses = if depth_stencil_attachment_descs.is_some() {
       vec![
         HalaSubpassDescription {
           pipeline_bind_point: HalaPipelineBindPoint::GRAPHICS,
           input_attachments: vec![],
-          color_attachments: color_formats.iter().enumerate().map(|(index, _)| HalaAttachmentReference {
+          color_attachments: color_attachment_descs.iter().enumerate().map(|(index, _)| HalaAttachmentReference {
             attachment: index as u32,
             layout: HalaImageLayout::COLOR_ATTACHMENT_OPTIMAL,
           }).collect::<Vec<_>>(),
           resolve_attachments: vec![],
           depth_stencil_attachment: Some(HalaAttachmentReference {
-            attachment: color_formats.len() as u32,
+            attachment: color_attachment_descs.len() as u32,
             layout: HalaImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
           }),
           preserve_attachments: vec![],
@@ -351,7 +386,7 @@ impl HalaRenderPass {
         HalaSubpassDescription {
           pipeline_bind_point: HalaPipelineBindPoint::GRAPHICS,
           input_attachments: vec![],
-          color_attachments: color_formats.iter().enumerate().map(|(index, _)| HalaAttachmentReference {
+          color_attachments: color_attachment_descs.iter().enumerate().map(|(index, _)| HalaAttachmentReference {
             attachment: index as u32,
             layout: HalaImageLayout::COLOR_ATTACHMENT_OPTIMAL,
           }).collect::<Vec<_>>(),
@@ -373,22 +408,14 @@ impl HalaRenderPass {
       }
     ];
 
-    let depth_stencil_formats = if depth_format.is_some() { vec![depth_format.unwrap()] } else { vec![] };
-    let depth_stencil_load_ops = if depth_format.is_some() { vec![(depth_load_op.unwrap(), stencil_load_op)] } else { vec![] };
-    let depth_stencil_store_ops = if depth_format.is_some() { vec![(depth_store_op.unwrap(), stencil_store_op)] } else { vec![] };
-
     let (
       color_attachment_descs,
-      depth_attachment_descs,
+      depth_stencil_attachment_descs,
       render_pass,
     ) = Self::create_render_pass(
       &logical_device,
-      color_formats,
-      color_load_ops,
-      color_store_ops,
-      depth_stencil_formats.as_slice(),
-      depth_stencil_load_ops.as_slice(),
-      depth_stencil_store_ops.as_slice(),
+      color_attachment_descs,
+      depth_stencil_attachment_descs,
       subpasses.as_slice(),
       subpass_deps.as_slice(),
       debug_name,
@@ -400,7 +427,7 @@ impl HalaRenderPass {
         logical_device,
         raw: render_pass,
         color_attachment_descs,
-        depth_attachment_descs,
+        depth_stencil_attachment_descs,
         debug_name: debug_name.to_string(),
       }
     )
@@ -408,41 +435,28 @@ impl HalaRenderPass {
 
   /// Create a new render pass with subpasses.
   /// param logical_device: The logical device.
-  /// param color_formats: The color formats.
-  /// param color_load_ops: The color load operations.
-  /// param color_store_ops: The color store operations.
-  /// param depth_stencil_formats: The depth and stencil formats.
-  /// param depth_stencil_load_ops: The depth and stencil load operations.
-  /// param depth_stencil_store_ops: The depth and stencil store operations.
+  /// param color_attachment_descs: The color attachment descriptions.
+  /// param depth_stencil_attachment_descs: The depth and stencil attachment descriptions.
   /// param subpasses: The subpasses.
   /// param subpass_deps: The subpass dependencies.
   /// param debug_name: The debug name.
   /// return: The render pass.
-  #[allow(clippy::too_many_arguments)]
   pub fn with_subpasses(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
-    color_formats: &[HalaFormat],
-    color_load_ops: &[HalaAttachmentLoadOp],
-    color_store_ops: &[HalaAttachmentStoreOp],
-    depth_stencil_formats: &[HalaFormat],
-    depth_stencil_load_ops: &[(HalaAttachmentLoadOp, Option<HalaAttachmentLoadOp>)],
-    depth_stencil_store_ops: &[(HalaAttachmentStoreOp, Option<HalaAttachmentStoreOp>)],
+    color_attachment_descs: &[HalaRenderPassAttachmentDesc],
+    depth_stencil_attachment_descs: Option<&[HalaRenderPassAttachmentDesc]>,
     subpasses: &[HalaSubpassDescription],
     subpass_deps: &[HalaSubpassDependency],
     debug_name: &str,
   ) -> Result<Self, HalaGfxError> {
     let (
       color_attachment_descs,
-      depth_attachment_descs,
+      depth_stencil_attachment_descs,
       render_pass,
     ) = Self::create_render_pass(
       &logical_device,
-      color_formats,
-      color_load_ops,
-      color_store_ops,
-      depth_stencil_formats,
-      depth_stencil_load_ops,
-      depth_stencil_store_ops,
+      color_attachment_descs,
+      depth_stencil_attachment_descs,
       subpasses,
       subpass_deps,
       debug_name,
@@ -454,7 +468,7 @@ impl HalaRenderPass {
         logical_device,
         raw: render_pass,
         color_attachment_descs,
-        depth_attachment_descs,
+        depth_stencil_attachment_descs,
         debug_name: debug_name.to_string(),
       }
     )
@@ -462,12 +476,8 @@ impl HalaRenderPass {
 
   /// Create a render pass.
   /// param logical_device: The logical device.
-  /// param color_formats: The color formats.
-  /// param color_load_ops: The color load operations.
-  /// param color_store_ops: The color store operations.
-  /// param depth_stencil_formats: The depth and stencil formats.
-  /// param depth_stencil_load_ops: The depth and stencil load operations.
-  /// param depth_stencil_store_ops: The depth and stencil store operations.
+  /// param color_attachment_descs: The color attachment descriptions.
+  /// param depth_stencil_attachment_descs: The depth and stencil attachment descriptions.
   /// param subpasses: The subpasses.
   /// param subpass_deps: The subpass dependencies.
   /// param debug_name: The debug name.
@@ -475,12 +485,8 @@ impl HalaRenderPass {
   #[allow(clippy::too_many_arguments)]
   fn create_render_pass(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
-    color_formats: &[HalaFormat],
-    color_load_ops: &[HalaAttachmentLoadOp],
-    color_store_ops: &[HalaAttachmentStoreOp],
-    depth_stencil_formats: &[HalaFormat],
-    depth_stencil_load_ops: &[(HalaAttachmentLoadOp, Option<HalaAttachmentLoadOp>)],
-    depth_stencil_store_ops: &[(HalaAttachmentStoreOp, Option<HalaAttachmentStoreOp>)],
+    color_attachment_descs: &[HalaRenderPassAttachmentDesc],
+    depth_stencil_attachment_descs: Option<&[HalaRenderPassAttachmentDesc]>,
     subpasses: &[HalaSubpassDescription],
     subpass_deps: &[HalaSubpassDependency],
     debug_name: &str,
@@ -489,33 +495,6 @@ impl HalaRenderPass {
     Vec<HalaRenderPassAttachmentDesc>,
     vk::RenderPass,
   ), HalaGfxError> {
-    assert!(color_formats.len() == color_load_ops.len() && color_formats.len() == color_store_ops.len());
-    assert!(depth_stencil_formats.len() == depth_stencil_load_ops.len() && depth_stencil_formats.len() == depth_stencil_store_ops.len());
-
-    let color_attachment_descs = color_formats.iter().zip(color_load_ops.iter()).zip(color_store_ops.iter())
-      .map(|((&format, &load_op), &store_op)| {
-        HalaRenderPassAttachmentDesc {
-          format,
-          load_op,
-          store_op,
-          samples: HalaSampleCountFlags::TYPE_1,
-          ..Default::default()
-        }
-      }
-    ).collect::<Vec<_>>();
-    let depth_stencil_attachment_descs = depth_stencil_formats.iter().zip(depth_stencil_load_ops.iter()).zip(depth_stencil_store_ops.iter())
-      .map(|((&format, &(load_op, stencil_load_op)), &(store_op, stencil_store_op))| {
-        HalaRenderPassAttachmentDesc {
-          format,
-          load_op,
-          store_op,
-          stencil_load_op: stencil_load_op.unwrap_or(HalaAttachmentLoadOp::DONT_CARE),
-          stencil_store_op: stencil_store_op.unwrap_or(HalaAttachmentStoreOp::DONT_CARE),
-          samples: HalaSampleCountFlags::TYPE_1,
-        }
-      }
-    ).collect::<Vec<_>>();
-
     let attachments = color_attachment_descs.iter().map(|desc| {
       vk::AttachmentDescription::default()
         .format(desc.format.into())
@@ -524,18 +503,20 @@ impl HalaRenderPass {
         .store_op(desc.store_op.into())
         .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
         .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
-        .initial_layout(vk::ImageLayout::UNDEFINED)
-        .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
-    }).chain(depth_stencil_attachment_descs.iter().map(|desc| {
-      vk::AttachmentDescription::default()
-        .format(desc.format.into())
-        .samples(desc.samples.into())
-        .load_op(desc.load_op.into())
-        .store_op(desc.store_op.into())
-        .stencil_load_op(desc.stencil_load_op.into())
-        .stencil_store_op(desc.stencil_store_op.into())
-        .initial_layout(vk::ImageLayout::UNDEFINED)
-        .final_layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        .initial_layout(desc.initial_layout.into())
+        .final_layout(desc.final_layout.into())
+    }).chain(depth_stencil_attachment_descs.iter().flat_map(|&descs| {
+      descs.iter().map(|desc| {
+        vk::AttachmentDescription::default()
+          .format(desc.format.into())
+          .samples(desc.samples.into())
+          .load_op(desc.load_op.into())
+          .store_op(desc.store_op.into())
+          .stencil_load_op(desc.stencil_load_op.into())
+          .stencil_store_op(desc.stencil_store_op.into())
+          .initial_layout(desc.initial_layout.into())
+          .final_layout(desc.final_layout.into())
+      })
     })).collect::<Vec<_>>();
 
     let attachment_ref_list = subpasses.iter().map(|desc| {
@@ -628,7 +609,7 @@ impl HalaRenderPass {
       debug_name,
     ).map_err(|err| HalaGfxError::new("Failed to set debug name for render pass.", Some(Box::new(err))))?;
 
-    Ok((color_attachment_descs, depth_stencil_attachment_descs, render_pass))
+    Ok((color_attachment_descs.to_vec(), depth_stencil_attachment_descs.unwrap_or_default().to_vec(), render_pass))
   }
 
 }
