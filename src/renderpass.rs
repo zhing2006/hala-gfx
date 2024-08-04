@@ -183,7 +183,6 @@ impl std::convert::From<HalaAccessFlags> for vk::AccessFlags {
 
 /// The attachment reference.
 #[repr(C)]
-#[cfg_attr(feature = "debug", derive(Debug))]
 #[derive(Copy, Clone, Default)]
 pub struct HalaAttachmentReference {
   pub attachment: u32,
@@ -193,7 +192,6 @@ pub struct HalaAttachmentReference {
 
 /// The subpass dependency.
 #[repr(C)]
-#[cfg_attr(feature = "debug", derive(Debug))]
 #[derive(Copy, Clone, Default)]
 pub struct HalaSubpassDependency {
   pub src_subpass: u32,

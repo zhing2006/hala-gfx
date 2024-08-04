@@ -2,7 +2,6 @@ use ash::vk;
 
 /// The axis-aligned bounding box.
 #[repr(C)]
-#[cfg_attr(feature = "debug", derive(Debug))]
 #[derive(Copy, Clone, Default)]
 pub struct HalaAABB {
   pub min: [f32; 3],
