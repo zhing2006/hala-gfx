@@ -570,6 +570,12 @@ impl HalaLogicalDevice {
     }
     log::debug!("Extension names: {:?}", extension_name_ptrs.iter().map(|&ptr| unsafe { std::ffi::CStr::from_ptr(ptr) }).collect::<Vec<_>>() );
 
+    let mut maintenance4_features = vk::PhysicalDeviceMaintenance4Features::default()
+      .maintenance4(true);
+    let mut maintenance5_features = vk::PhysicalDeviceMaintenance5FeaturesKHR::default()
+      .maintenance5(true);
+    let mut maintenance6_features = vk::PhysicalDeviceMaintenance6FeaturesKHR::default()
+      .maintenance6(true);
     let mut descriptor_indexing_features =
       vk::PhysicalDeviceDescriptorIndexingFeaturesEXT::default();
     let mut buffer_device_address_features =
@@ -608,6 +614,7 @@ impl HalaLogicalDevice {
     let mut acceleration_structure_features =
       vk::PhysicalDeviceAccelerationStructureFeaturesKHR::default();
     let mut features2 = vk::PhysicalDeviceFeatures2::default()
+      .push_next(&mut maintenance4_features)
       .push_next(&mut descriptor_indexing_features)
       .push_next(&mut buffer_device_address_features)
       .push_next(&mut scalar_block_layout_features)
@@ -619,6 +626,8 @@ impl HalaLogicalDevice {
       // These features will cause nSight stop working.
       // So only enable them in release mode.
       features2 = features2
+        .push_next(&mut maintenance5_features)
+        .push_next(&mut maintenance6_features)
         .push_next(&mut dynamic_rendering_local_read_features);
     }
     if gpu_req.require_mesh_shader {
