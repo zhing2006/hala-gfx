@@ -55,6 +55,11 @@ pub struct HalaLogicalDevice {
   pub shader_group_handle_size: u32,
   pub shader_group_handle_alignment: u32,
   pub shader_group_base_alignment: u32,
+  pub framebuffer_color_sample_counts: vk::SampleCountFlags,
+  pub framebuffer_depth_sample_counts: vk::SampleCountFlags,
+  pub framebuffer_stencil_sample_counts: vk::SampleCountFlags,
+  pub framebuffer_no_attachments_sample_counts: vk::SampleCountFlags,
+  pub supported_depth_resolve_modes: vk::ResolveModeFlags,
 }
 
 /// The Drop trait implementation of the logical device.
@@ -118,6 +123,10 @@ impl HalaLogicalDevice {
       )
     )?;
 
+    let physical_device_properties = Self::get_physical_device_properties(instance, physical_device);
+
+    let depth_stencil_resolve_features = Self::get_depth_stencil_resolve_features(instance, physical_device);
+
     // Create ray tracing objects.
     let (
       acceleration_structure,
@@ -162,6 +171,11 @@ impl HalaLogicalDevice {
         shader_group_handle_size: ray_tracing_pipeline_properties.shader_group_handle_size,
         shader_group_handle_alignment: ray_tracing_pipeline_properties.shader_group_handle_alignment,
         shader_group_base_alignment: ray_tracing_pipeline_properties.shader_group_base_alignment,
+        framebuffer_color_sample_counts: physical_device_properties.limits.framebuffer_color_sample_counts,
+        framebuffer_depth_sample_counts: physical_device_properties.limits.framebuffer_depth_sample_counts,
+        framebuffer_stencil_sample_counts: physical_device_properties.limits.framebuffer_stencil_sample_counts,
+        framebuffer_no_attachments_sample_counts: physical_device_properties.limits.framebuffer_no_attachments_sample_counts,
+        supported_depth_resolve_modes: depth_stencil_resolve_features.supported_depth_resolve_modes,
       }
     )
   }
@@ -706,6 +720,36 @@ impl HalaLogicalDevice {
       deferred_host_operations,
       ray_tracing_pipeline,
     )
+  }
+
+  /// Get physical device properties.
+  /// param instance: The instance.
+  /// param physical_device: The physical device.
+  /// return: The physical device properties.
+  fn get_physical_device_properties(
+    instance: &crate::HalaInstance,
+    physical_device: &crate::HalaPhysicalDevice,
+  ) -> vk::PhysicalDeviceProperties {
+    unsafe {
+      instance.raw.get_physical_device_properties(physical_device.raw)
+    }
+  }
+
+  /// Get depth stencil resolve features.
+  /// param instance: The instance.
+  /// param physical_device: The physical device.
+  /// return: The depth stencil resolve features.
+  fn get_depth_stencil_resolve_features<'a>(
+    instance: &crate::HalaInstance,
+    physical_device: &crate::HalaPhysicalDevice,
+  ) -> vk::PhysicalDeviceDepthStencilResolvePropertiesKHR<'a> {
+    let mut depth_stencil_resolve_features = vk::PhysicalDeviceDepthStencilResolvePropertiesKHR::default();
+    let mut features2 = vk::PhysicalDeviceProperties2::default()
+      .push_next(&mut depth_stencil_resolve_features);
+    unsafe {
+      instance.raw.get_physical_device_properties2(physical_device.raw, &mut features2);
+    }
+    depth_stencil_resolve_features
   }
 
   /// Get ray tracing features.

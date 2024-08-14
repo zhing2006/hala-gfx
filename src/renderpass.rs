@@ -85,6 +85,32 @@ impl std::convert::From<HalaSampleCountFlags> for vk::SampleCountFlags {
   }
 }
 
+/// The resolve mode flags.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HalaResolveModeFlags(u32);
+crate::hala_bitflags_wrapped!(HalaResolveModeFlags, u32);
+
+/// The implementation of the resolve mode flags.
+impl HalaResolveModeFlags {
+  pub const NONE: Self = Self(vk::ResolveModeFlags::NONE.as_raw());
+  pub const SAMPLE_ZERO: Self = Self(vk::ResolveModeFlags::SAMPLE_ZERO.as_raw());
+  pub const AVERAGE: Self = Self(vk::ResolveModeFlags::AVERAGE.as_raw());
+  pub const MIN: Self = Self(vk::ResolveModeFlags::MIN.as_raw());
+  pub const MAX: Self = Self(vk::ResolveModeFlags::MAX.as_raw());
+}
+
+impl std::convert::From<vk::ResolveModeFlags> for HalaResolveModeFlags {
+  fn from(flags: vk::ResolveModeFlags) -> Self {
+    Self(flags.as_raw())
+  }
+}
+
+impl std::convert::From<HalaResolveModeFlags> for vk::ResolveModeFlags {
+  fn from(flags: HalaResolveModeFlags) -> Self {
+    vk::ResolveModeFlags::from_raw(flags.0)
+  }
+}
+
 /// The pipeline bind point.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaPipelineBindPoint(i32);

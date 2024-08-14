@@ -1,13 +1,7 @@
 use ash::vk;
 
 use crate::{
-  HalaGfxError,
-  HalaLogicalDevice,
-  HalaFormat,
-  HalaMemoryLocation,
-  HalaBuffer,
-  HalaCommandBufferSet,
-  HalaPipelineStageFlags2,
+  HalaBuffer, HalaCommandBufferSet, HalaFormat, HalaGfxError, HalaLogicalDevice, HalaMemoryLocation, HalaPipelineStageFlags2, HalaSampleCountFlags
 };
 
 /// The image usage flags.
@@ -105,6 +99,7 @@ impl HalaImage {
       height,
       mip_levels,
       array_layers,
+      HalaSampleCountFlags::TYPE_1,
       memory_location,
       false,
       debug_name,
@@ -142,6 +137,87 @@ impl HalaImage {
       height,
       mip_levels,
       array_layers,
+      HalaSampleCountFlags::TYPE_1,
+      memory_location,
+      true,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D multisample image with dedicated memory.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param samples: The number of samples.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn with_2d_multisample(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    samples: HalaSampleCountFlags,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      samples,
+      memory_location,
+      false,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D multisample image with managed memory.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param samples: The number of samples.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn with_2d_multisample_managed(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    samples: HalaSampleCountFlags,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      samples,
       memory_location,
       true,
       debug_name,
@@ -156,6 +232,7 @@ impl HalaImage {
   /// param height: The image height.
   /// param mip_levels: The number of mip levels.
   /// param array_layers: The number of array layers.
+  /// param samples: The number of samples.
   /// param memory_location: The memory location.
   /// param use_managed_memory: Whether to use managed memory.
   /// param debug_name: The debug name.
@@ -169,6 +246,7 @@ impl HalaImage {
     height: u32,
     mip_levels: u32,
     array_layers: u32,
+    samples: HalaSampleCountFlags,
     memory_location: HalaMemoryLocation,
     use_managed_memory: bool,
     debug_name: &str,
@@ -183,7 +261,7 @@ impl HalaImage {
       })
       .mip_levels(mip_levels)
       .array_layers(array_layers)
-      .samples(vk::SampleCountFlags::TYPE_1)
+      .samples(samples.into())
       .tiling(vk::ImageTiling::OPTIMAL)
       .usage(usage.into())
       .sharing_mode(vk::SharingMode::EXCLUSIVE)

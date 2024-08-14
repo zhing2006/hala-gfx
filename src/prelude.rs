@@ -16,6 +16,7 @@ pub use crate::renderpass::{
   HalaAttachmentLoadOp,
   HalaAttachmentStoreOp,
   HalaSampleCountFlags,
+  HalaResolveModeFlags,
   HalaPipelineBindPoint,
   HalaDependencyFlags,
   HalaAccessFlags,
