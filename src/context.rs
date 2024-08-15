@@ -16,6 +16,7 @@ use crate::{
   HalaImage,
   HalaGfxError,
   HalaFormat,
+  HalaSampleCountFlags,
 };
 
 /// The context of the hala-gfx crate.
@@ -30,6 +31,8 @@ pub struct HalaContext {
   pub short_time_pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
   pub logical_device: std::mem::ManuallyDrop<Rc<RefCell<HalaLogicalDevice>>>,
   pub timestamp_query_pool: std::mem::ManuallyDrop<HalaQueryPool>,
+
+  pub multisample_count: HalaSampleCountFlags,
 }
 
 /// The Drop trait implementation of the context of the hala-gfx crate.
@@ -126,6 +129,7 @@ impl HalaContext {
         pools: std::mem::ManuallyDrop::new(pools),
         short_time_pools: std::mem::ManuallyDrop::new(short_time_pools),
         timestamp_query_pool: std::mem::ManuallyDrop::new(timestamp_query_pool),
+        multisample_count: HalaSampleCountFlags::TYPE_1,
       }
     )
   }

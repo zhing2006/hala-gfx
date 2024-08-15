@@ -49,6 +49,7 @@ pub use crate::pipeline::{
   HalaStencilOpState,
   HalaBlendState,
   HalaRasterizerState,
+  HalaMultisampleState,
   HalaDepthState,
   HalaStencilState,
   HalaVertexInputAttributeDescription,

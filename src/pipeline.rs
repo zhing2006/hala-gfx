@@ -17,7 +17,8 @@ use crate::{
   HalaRenderPass,
   HalaShader,
   HalaShaderStageFlags,
-  HalaSwapchain
+  HalaSwapchain,
+  HalaSampleCountFlags,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1222,6 +1223,60 @@ impl HalaRasterizerState {
 
 }
 
+/// The multisample state.
+#[derive(Serialize, Deserialize)]
+pub struct HalaMultisampleState {
+  pub rasterization_samples: HalaSampleCountFlags,
+  pub sample_shading_enable: bool,
+  pub min_sample_shading: f32,
+  pub sample_masks: Vec<u32>,
+  pub alpha_to_coverage_enable: bool,
+  pub alpha_to_one_enable: bool,
+}
+
+impl AsRef<HalaMultisampleState> for HalaMultisampleState {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+/// The default implementation for the multisample state.
+impl Default for HalaMultisampleState {
+  fn default() -> Self {
+    Self {
+      rasterization_samples: HalaSampleCountFlags::TYPE_1,
+      sample_shading_enable: false,
+      min_sample_shading: 1.0,
+      sample_masks: vec![],
+      alpha_to_coverage_enable: false,
+      alpha_to_one_enable: false,
+    }
+  }
+}
+
+/// The multisample state implementation.
+impl HalaMultisampleState {
+
+  pub fn new(
+    rasterization_samples: HalaSampleCountFlags,
+    sample_shading_enable: bool,
+    min_sample_shading: f32,
+    sample_masks: &[u32],
+    alpha_to_coverage_enable: bool,
+    alpha_to_one_enable: bool,
+  ) -> Self {
+    Self {
+      rasterization_samples,
+      sample_shading_enable,
+      min_sample_shading,
+      sample_masks: sample_masks.to_vec(),
+      alpha_to_coverage_enable,
+      alpha_to_one_enable,
+    }
+  }
+
+}
+
 /// The depth state.
 #[derive(Serialize, Deserialize)]
 pub struct HalaDepthState {
@@ -1452,6 +1507,7 @@ impl HalaGraphicsPipeline {
   /// param color_blend: The color blend(source, destination, operation).
   /// param alpha_blend: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// param multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param stencil_info: The stencil info(test enable, front, back).
   /// param shaders: The shaders.
@@ -1471,6 +1527,7 @@ impl HalaGraphicsPipeline {
     color_blend: &HalaBlendState,
     alpha_blend: &HalaBlendState,
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -1501,6 +1558,7 @@ impl HalaGraphicsPipeline {
       color_blend,
       alpha_blend,
       rasterizer_info,
+      multisample_info,
       depth_info,
       stencil_info,
       shaders,
@@ -1536,6 +1594,7 @@ impl HalaGraphicsPipeline {
   /// color_blends: The color blend(source, destination, operation).
   /// alpha_blends: The alpha blend(source, destination, operation).
   /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// depth_info: The depth info(test enable, write enable, compare operation).
   /// stencil_info: The stencil info(test enable, front, back).
   /// shaders: The shaders.
@@ -1556,6 +1615,7 @@ impl HalaGraphicsPipeline {
     color_blends: &[BS],
     alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -1589,6 +1649,7 @@ impl HalaGraphicsPipeline {
       color_blends,
       alpha_blends,
       rasterizer_info,
+      multisample_info,
       depth_info,
       stencil_info,
       shaders,
@@ -1626,6 +1687,7 @@ impl HalaGraphicsPipeline {
   /// color_blends: The color blend(source, destination, operation).
   /// alpha_blends: The alpha blend(source, destination, operation).
   /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// depth_info: The depth info(test enable, write enable, compare operation).
   /// stencil_info: The stencil info(test enable, front, back).
   /// shaders: The shaders.
@@ -1648,6 +1710,7 @@ impl HalaGraphicsPipeline {
     color_blends: &[BS],
     alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -1677,6 +1740,7 @@ impl HalaGraphicsPipeline {
       color_blends,
       alpha_blends,
       rasterizer_info,
+      multisample_info,
       depth_info,
       stencil_info,
       shaders,
@@ -1703,6 +1767,7 @@ impl HalaGraphicsPipeline {
   /// color_blends: The color blend(source, destination, operation).
   /// alpha_blends: The alpha blend(source, destination, operation).
   /// rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// depth_info: The depth info(test enable, write enable, compare operation).
   /// stencil_info: The stencil info(test enable, front, back).
   /// shaders: The shaders.
@@ -1727,6 +1792,7 @@ impl HalaGraphicsPipeline {
     color_blends: &[BS],
     alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -1763,6 +1829,7 @@ impl HalaGraphicsPipeline {
       color_blends,
       alpha_blends,
       rasterizer_info,
+      multisample_info,
       depth_info,
       stencil_info,
       shaders,
@@ -1795,6 +1862,7 @@ impl HalaGraphicsPipeline {
   /// param color_blend: The color blend(source, destination, operation).
   /// param alpha_blend: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// param multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param stencil_info: The stencil info(test enable, front, back).
   /// param shaders: The shaders.
@@ -1815,6 +1883,7 @@ impl HalaGraphicsPipeline {
     color_blend: &HalaBlendState,
     alpha_blend: &HalaBlendState,
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -1842,6 +1911,7 @@ impl HalaGraphicsPipeline {
       &[color_blend],
       &[alpha_blend],
       rasterizer_info,
+      multisample_info,
       depth_info,
       stencil_info,
       shaders,
@@ -1865,6 +1935,7 @@ impl HalaGraphicsPipeline {
   /// param color_blends: The color blend(source, destination, operation).
   /// param alpha_blends: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// param multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param stencil_info: The stencil info(test enable, front, back).
   /// param shaders: The shaders.
@@ -1886,6 +1957,7 @@ impl HalaGraphicsPipeline {
     color_blends: &[BS],
     alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -1915,6 +1987,7 @@ impl HalaGraphicsPipeline {
       color_blends,
       alpha_blends,
       rasterizer_info,
+      multisample_info,
       depth_info,
       stencil_info,
       shaders,
@@ -1940,6 +2013,7 @@ impl HalaGraphicsPipeline {
   /// param color_blends: The color blend(source, destination, operation).
   /// param alpha_blends: The alpha blend(source, destination, operation).
   /// param rasterizer_info: The rasterizer info(line width, front face, cull mode, polygon mode)
+  /// param multisample_info: The multisample info(rasterization samples, sample shading enable, min sample shading, sample masks, alpha to coverage enable, alpha to one enable).
   /// param depth_info: The depth info(test enable, write enable, compare operation).
   /// param stencil_info: The stencil info(test enable, front, back).
   /// param shaders: The shaders.
@@ -1963,6 +2037,7 @@ impl HalaGraphicsPipeline {
     color_blends: &[BS],
     alpha_blends: &[BS],
     rasterizer_info: &HalaRasterizerState,
+    multisample_info: &HalaMultisampleState,
     depth_info: &HalaDepthState,
     stencil_info: Option<&HalaStencilState>,
     shaders: &[S],
@@ -2018,7 +2093,12 @@ impl HalaGraphicsPipeline {
       .polygon_mode(rasterizer_info.polygon_mode.into());
 
     let multisampler_info = vk::PipelineMultisampleStateCreateInfo::default()
-      .rasterization_samples(vk::SampleCountFlags::TYPE_1);
+      .rasterization_samples(multisample_info.rasterization_samples.into())
+      .sample_shading_enable(multisample_info.sample_shading_enable)
+      .min_sample_shading(multisample_info.min_sample_shading)
+      .sample_mask(multisample_info.sample_masks.as_ref())
+      .alpha_to_coverage_enable(multisample_info.alpha_to_coverage_enable)
+      .alpha_to_one_enable(multisample_info.alpha_to_one_enable);
 
     let color_blend_attachments = color_blends.iter().zip(alpha_blends).map(|(color_blend, alpha_blend)| {
       vk::PipelineColorBlendAttachmentState::default()

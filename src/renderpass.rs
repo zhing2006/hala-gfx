@@ -1,6 +1,9 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::de::{self, Unexpected, Visitor};
+
 use ash::vk;
 
 use crate::{
@@ -82,6 +85,71 @@ impl std::convert::From<vk::SampleCountFlags> for HalaSampleCountFlags {
 impl std::convert::From<HalaSampleCountFlags> for vk::SampleCountFlags {
   fn from(flags: HalaSampleCountFlags) -> Self {
     vk::SampleCountFlags::from_raw(flags.0)
+  }
+}
+
+impl Serialize for HalaSampleCountFlags {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let s = match *self {
+      HalaSampleCountFlags::TYPE_1 => "type_1",
+      HalaSampleCountFlags::TYPE_2 => "type_2",
+      HalaSampleCountFlags::TYPE_4 => "type_4",
+      HalaSampleCountFlags::TYPE_8 => "type_8",
+      HalaSampleCountFlags::TYPE_16 => "type_16",
+      HalaSampleCountFlags::TYPE_32 => "type_32",
+      HalaSampleCountFlags::TYPE_64 => "type_64",
+      _ => "default",
+    };
+
+    serializer.serialize_str(s)
+  }
+}
+
+impl<'de> Deserialize<'de> for HalaSampleCountFlags {
+  fn deserialize<D>(deserializer: D) -> Result<HalaSampleCountFlags, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    struct HalaSampleCountFlagsVisitor;
+
+    impl<'de> Visitor<'de> for HalaSampleCountFlagsVisitor {
+      type Value = HalaSampleCountFlags;
+
+      fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string of front face")
+      }
+
+      fn visit_str<E>(self, value: &str) -> Result<HalaSampleCountFlags, E>
+      where
+        E: de::Error,
+      {
+        let val = match value {
+          "type_1" => HalaSampleCountFlags::TYPE_1,
+          "TYPE_1" => HalaSampleCountFlags::TYPE_1,
+          "type_2" => HalaSampleCountFlags::TYPE_2,
+          "TYPE_2" => HalaSampleCountFlags::TYPE_2,
+          "type_4" => HalaSampleCountFlags::TYPE_4,
+          "TYPE_4" => HalaSampleCountFlags::TYPE_4,
+          "type_8" => HalaSampleCountFlags::TYPE_8,
+          "TYPE_8" => HalaSampleCountFlags::TYPE_8,
+          "type_16" => HalaSampleCountFlags::TYPE_16,
+          "TYPE_16" => HalaSampleCountFlags::TYPE_16,
+          "type_32" => HalaSampleCountFlags::TYPE_32,
+          "TYPE_32" => HalaSampleCountFlags::TYPE_32,
+          "type_64" => HalaSampleCountFlags::TYPE_64,
+          "TYPE_64" => HalaSampleCountFlags::TYPE_64,
+          "default" => HalaSampleCountFlags::default(),
+          _ => return Err(de::Error::invalid_value(Unexpected::Str(value), &"a sample count flag")),
+        };
+
+        Ok(val)
+      }
+    }
+
+    deserializer.deserialize_str(HalaSampleCountFlagsVisitor)
   }
 }
 
