@@ -582,6 +582,9 @@ impl HalaLogicalDevice {
       // extension_name_ptrs.push(ash::khr::ray_tracing_maintenance1::NAME.as_ptr());
       extension_name_ptrs.push(ash::ext::scalar_block_layout::NAME.as_ptr());
     }
+    if gpu_req.require_depth_stencil_resolve {
+      extension_name_ptrs.push(ash::khr::depth_stencil_resolve::NAME.as_ptr());
+    };
     log::debug!("Extension names: {:?}", extension_name_ptrs.iter().map(|&ptr| unsafe { std::ffi::CStr::from_ptr(ptr) }).collect::<Vec<_>>() );
 
     let mut maintenance4_features = vk::PhysicalDeviceMaintenance4Features::default()

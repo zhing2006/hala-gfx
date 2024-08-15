@@ -51,6 +51,7 @@ pub struct HalaGPURequirements {
   pub require_depth: bool,
   pub require_stencil: bool,
   pub require_printf_in_shader: bool,
+  pub require_depth_stencil_resolve: bool,
 }
 
 impl Default for HalaGPURequirements {
@@ -70,6 +71,7 @@ impl Default for HalaGPURequirements {
       require_depth: true,
       require_stencil: false,
       require_printf_in_shader: false,
+      require_depth_stencil_resolve: false,
     }
   }
 }

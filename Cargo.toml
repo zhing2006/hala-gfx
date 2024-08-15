@@ -6,8 +6,8 @@ description = "A simple graphics library for Vulkan based on ash."
 
 [dependencies]
 thiserror = {version = "1", default-features = false}
-log = {version = "0", default-features = false}
+log = {version = "0.4", default-features = false}
 serde = {version = "1", default-features = false, features = ["derive"]}
-ash = {version = "0"}
-gpu-allocator = {git = "https://github.com/Traverse-Research/gpu-allocator.git", default-features = false, features = ["vulkan"]}
+ash = {version = "0.38"}
+gpu-allocator = {version = "0.27", default-features = false, features = ["vulkan"]}
 winit = {version = "0.29", default-features = false, features = ["rwh_06", "x11", "wayland", "wayland-dlopen"]}
