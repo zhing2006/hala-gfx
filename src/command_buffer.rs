@@ -511,7 +511,7 @@ impl HalaCommandBufferSet {
     }
   }
 
-  /// Begin rendering.
+  /// Begin multisample rendering.
   /// param index: The index of the command buffer.
   /// param swapchain: The swapchain.
   /// param render_area: The render area(x, y, width, height).
@@ -530,7 +530,7 @@ impl HalaCommandBufferSet {
     stencil_clear_value: Option<u32>,
     resolve_mode: HalaResolveModeFlags,
     color_multisample_image: &HalaImage,
-    depth_stencil_multisample_image: &HalaImage,
+    depth_stencil_multisample_image: Option<&HalaImage>,
   ) {
     let has_depth = swapchain.depth_stencil_format != HalaFormat::UNDEFINED;
     let has_stencil = swapchain.has_stencil;
@@ -548,34 +548,46 @@ impl HalaCommandBufferSet {
           float32: color_clear_value.unwrap_or([0f32; 4]),
         },
       });
-    let depth_attachment_info = vk::RenderingAttachmentInfo::default()
-      .resolve_image_view(swapchain.depth_stencil_image_view)
-      .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-      .resolve_mode(resolve_mode.into())
-      .image_view(depth_stencil_multisample_image.view)
-      .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-      .load_op(if depth_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::DONT_CARE)
-      .clear_value(vk::ClearValue {
-        depth_stencil: vk::ClearDepthStencilValue {
-          depth: depth_clear_value.unwrap_or(1.0),
-          stencil: stencil_clear_value.unwrap_or(0),
-        },
-      });
-    let stencil_attachment_info = vk::RenderingAttachmentInfo::default()
-      .resolve_image_view(swapchain.depth_stencil_image_view)
-      .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-      .resolve_mode(resolve_mode.into())
-      .image_view(depth_stencil_multisample_image.view)
-      .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
-      .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::DONT_CARE)
-      .clear_value(vk::ClearValue {
-        depth_stencil: vk::ClearDepthStencilValue {
-          depth: depth_clear_value.unwrap_or(1.0),
-          stencil: stencil_clear_value.unwrap_or(0),
-        },
-      });
+
+    let depth_attachment_info = if has_depth {
+      let depth_stencil_multisample_image = depth_stencil_multisample_image.unwrap_or_else(|| panic!("The depth_stencil_multisample_image is required."));
+      vk::RenderingAttachmentInfo::default()
+        .resolve_image_view(swapchain.depth_stencil_image_view)
+        .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .resolve_mode(resolve_mode.into())
+        .image_view(depth_stencil_multisample_image.view)
+        .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .load_op(if depth_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+        .store_op(vk::AttachmentStoreOp::DONT_CARE)
+        .clear_value(vk::ClearValue {
+          depth_stencil: vk::ClearDepthStencilValue {
+            depth: depth_clear_value.unwrap_or(1.0),
+            stencil: stencil_clear_value.unwrap_or(0),
+          },
+        })
+    } else {
+      vk::RenderingAttachmentInfo::default()
+    };
+
+    let stencil_attachment_info = if has_stencil {
+      let depth_stencil_multisample_image = depth_stencil_multisample_image.unwrap_or_else(|| panic!("The depth_stencil_multisample_image is required."));
+      vk::RenderingAttachmentInfo::default()
+        .resolve_image_view(swapchain.depth_stencil_image_view)
+        .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .resolve_mode(resolve_mode.into())
+        .image_view(depth_stencil_multisample_image.view)
+        .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+        .store_op(vk::AttachmentStoreOp::DONT_CARE)
+        .clear_value(vk::ClearValue {
+          depth_stencil: vk::ClearDepthStencilValue {
+            depth: depth_clear_value.unwrap_or(1.0),
+            stencil: stencil_clear_value.unwrap_or(0),
+          },
+        })
+    } else {
+      vk::RenderingAttachmentInfo::default()
+    };
 
     let rendering_info = vk::RenderingInfo::default()
       .render_area(vk::Rect2D {
@@ -652,6 +664,107 @@ impl HalaCommandBufferSet {
       });
     let stencil_attachment_info = vk::RenderingAttachmentInfo::default()
       .image_view(depth_image_view)
+      .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+      .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+      .store_op(vk::AttachmentStoreOp::DONT_CARE)
+      .clear_value(vk::ClearValue {
+        depth_stencil: vk::ClearDepthStencilValue {
+          depth: depth_clear_value.unwrap_or(1.0),
+          stencil: stencil_clear_value.unwrap_or(0),
+        },
+      });
+
+    let rendering_info = vk::RenderingInfo::default()
+      .render_area(vk::Rect2D {
+        offset: vk::Offset2D { x: render_area.0, y: render_area.1 },
+        extent: vk::Extent2D { width: render_area.2, height: render_area.3 },
+      })
+      .layer_count(1)
+      .color_attachments(color_attachment_info.as_slice());
+    let rendering_info = if has_depth {
+      rendering_info.depth_attachment(&depth_attachment_info)
+    } else {
+      rendering_info
+    };
+    let rendering_info = if has_stencil {
+      rendering_info.stencil_attachment(&stencil_attachment_info)
+    } else {
+      rendering_info
+    };
+
+    unsafe {
+      let logical_device = self.logical_device.borrow();
+      logical_device.raw.cmd_begin_rendering(self.raw[index], &rendering_info);
+    }
+  }
+
+  /// Begin rendering with the specified multisample render targets.
+  /// param index: The index of the command buffer.
+  /// param color_images: The color images.
+  /// param depth_image: The depth image.
+  /// param render_area: The render area(x, y, width, height).
+  /// param color_clear_values: The color clear values.
+  /// param depth_clear_value: The depth clear value.
+  /// param stencil_clear_value: The stencil clear value.
+  /// return: The result.
+  #[allow(clippy::too_many_arguments)]
+  pub fn begin_rendering_with_rt_multisample<T>(
+    &self,
+    index: usize,
+    color_images: &[T],
+    depth_image: Option<T>,
+    render_area: (i32, i32, u32, u32),
+    color_clear_values: &[Option<[f32; 4]>],
+    depth_clear_value: Option<f32>,
+    stencil_clear_value: Option<u32>,
+    resolve_mode: HalaResolveModeFlags,
+    color_multisample_images: &[T],
+    depth_stencil_multisample_image: Option<T>,
+  )
+    where T: AsRef<HalaImage>
+  {
+    assert!(color_images.len() == color_multisample_images.len());
+    assert!(depth_image.is_some() == depth_stencil_multisample_image.is_some());
+
+    let has_depth = depth_image.is_some();
+    let has_stencil = depth_image.as_ref().map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
+
+    let color_attachment_info = color_images.iter().zip(color_multisample_images).zip(color_clear_values).map(|((image, multisample_image), clear_value)| {
+      vk::RenderingAttachmentInfo::default()
+        .resolve_image_view(image.as_ref().view)
+        .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .resolve_mode(resolve_mode.into())
+        .image_view(multisample_image.as_ref().view)
+        .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .load_op(if clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+        .store_op(vk::AttachmentStoreOp::STORE)
+        .clear_value(vk::ClearValue {
+          color: vk::ClearColorValue {
+            float32: clear_value.unwrap_or([0f32; 4]),
+          },
+        })
+    }).collect::<Vec<_>>();
+    let depth_image_view = depth_image.as_ref().map_or(vk::ImageView::null(), |image| image.as_ref().view);
+    let depth_multisample_image_view = depth_stencil_multisample_image.as_ref().map_or(vk::ImageView::null(), |image| image.as_ref().view);
+    let depth_attachment_info = vk::RenderingAttachmentInfo::default()
+      .resolve_image_view(depth_image_view)
+      .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+      .resolve_mode(resolve_mode.into())
+      .image_view(depth_multisample_image_view)
+      .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+      .load_op(if depth_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
+      .store_op(vk::AttachmentStoreOp::DONT_CARE)
+      .clear_value(vk::ClearValue {
+        depth_stencil: vk::ClearDepthStencilValue {
+          depth: depth_clear_value.unwrap_or(1.0),
+          stencil: stencil_clear_value.unwrap_or(0),
+        },
+      });
+    let stencil_attachment_info = vk::RenderingAttachmentInfo::default()
+      .resolve_image_view(depth_image_view)
+      .resolve_image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+      .resolve_mode(resolve_mode.into())
+      .image_view(depth_multisample_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
       .store_op(vk::AttachmentStoreOp::DONT_CARE)
