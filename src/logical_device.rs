@@ -563,6 +563,7 @@ impl HalaLogicalDevice {
       ash::ext::shader_image_atomic_int64::NAME.as_ptr(),
       ash::khr::buffer_device_address::NAME.as_ptr(),
       ash::khr::shader_draw_parameters::NAME.as_ptr(),
+      ash::khr::draw_indirect_count::NAME.as_ptr(),
     ];
     if !cfg!(debug_assertions) {
       // These extensions will cause nSight stop working.
