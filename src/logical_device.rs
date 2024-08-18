@@ -616,8 +616,9 @@ impl HalaLogicalDevice {
       .descriptor_binding_variable_descriptor_count(true)
       .descriptor_binding_partially_bound(true)
       .runtime_descriptor_array(true);
-    let mut buffer_device_address_features =
-      vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR::default();
+    let mut buffer_device_address_features = vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR::default()
+      .buffer_device_address(true)
+      .buffer_device_address_capture_replay(if cfg!(debug_assertions) { true } else { false });
     let mut shader_draw_parameters_features = vk::PhysicalDeviceShaderDrawParametersFeatures::default()
       .shader_draw_parameters(true);
     let mut scalar_block_layout_features =
