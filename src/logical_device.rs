@@ -562,6 +562,7 @@ impl HalaLogicalDevice {
       ash::ext::shader_atomic_float::NAME.as_ptr(),
       ash::ext::shader_image_atomic_int64::NAME.as_ptr(),
       ash::khr::buffer_device_address::NAME.as_ptr(),
+      ash::khr::shader_draw_parameters::NAME.as_ptr(),
     ];
     if !cfg!(debug_assertions) {
       // These extensions will cause nSight stop working.
@@ -616,6 +617,8 @@ impl HalaLogicalDevice {
       .runtime_descriptor_array(true);
     let mut buffer_device_address_features =
       vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR::default();
+    let mut shader_draw_parameters_features = vk::PhysicalDeviceShaderDrawParametersFeatures::default()
+      .shader_draw_parameters(true);
     let mut scalar_block_layout_features =
       vk::PhysicalDeviceScalarBlockLayoutFeatures::default();
     let mut dynamic_rendering_features =
@@ -653,6 +656,7 @@ impl HalaLogicalDevice {
       .push_next(&mut maintenance4_features)
       .push_next(&mut descriptor_indexing_features)
       .push_next(&mut buffer_device_address_features)
+      .push_next(&mut shader_draw_parameters_features)
       .push_next(&mut scalar_block_layout_features)
       .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features)
