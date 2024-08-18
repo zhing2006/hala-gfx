@@ -189,7 +189,7 @@ impl std::convert::From<HalaVertexInputRate> for vk::VertexInputRate {
 }
 
 /// The primitive topology.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HalaPrimitiveTopology(i32);
 impl HalaPrimitiveTopology {
   pub const POINT_LIST: Self = Self(vk::PrimitiveTopology::POINT_LIST.as_raw());
@@ -203,6 +203,12 @@ impl HalaPrimitiveTopology {
   pub const TRIANGLE_LIST_WITH_ADJACENCY: Self = Self(vk::PrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY.as_raw());
   pub const TRIANGLE_STRIP_WITH_ADJACENCY: Self = Self(vk::PrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY.as_raw());
   pub const PATCH_LIST: Self = Self(vk::PrimitiveTopology::PATCH_LIST.as_raw());
+}
+
+impl Default for HalaPrimitiveTopology {
+  fn default() -> Self {
+    Self::TRIANGLE_LIST
+  }
 }
 
 impl std::convert::From<vk::PrimitiveTopology> for HalaPrimitiveTopology {
