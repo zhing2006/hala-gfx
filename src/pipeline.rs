@@ -1611,7 +1611,7 @@ impl HalaGraphicsPipeline {
   pub fn with_rt<T, DSL, VIAD, VIBD, PCR, BS, S>(
     logical_device: Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
-    depth_image: Option<&T>,
+    depth_image: Option<T>,
     descriptor_set_layouts: &[DSL],
     flags: HalaPipelineCreateFlags,
     vertex_attribute_descriptions: &[VIAD],
@@ -1955,7 +1955,7 @@ impl HalaGraphicsPipeline {
   fn create_pipeline_with_rt<T, VIAD, VIBD, BS, S>(
     logical_device: &Rc<RefCell<HalaLogicalDevice>>,
     color_images: &[T],
-    depth_image: Option<&T>,
+    depth_image: Option<T>,
     flags: HalaPipelineCreateFlags,
     vertex_attribute_descriptions: &[VIAD],
     vertex_binding_descriptions: &[VIBD],
