@@ -564,6 +564,7 @@ impl HalaLogicalDevice {
       ash::khr::buffer_device_address::NAME.as_ptr(),
       ash::khr::shader_draw_parameters::NAME.as_ptr(),
       ash::khr::draw_indirect_count::NAME.as_ptr(),
+      ash::khr::dynamic_rendering::NAME.as_ptr(),
     ];
     if !cfg!(debug_assertions) {
       // These extensions will cause nSight stop working.
@@ -623,13 +624,14 @@ impl HalaLogicalDevice {
       .shader_draw_parameters(true);
     let mut scalar_block_layout_features =
       vk::PhysicalDeviceScalarBlockLayoutFeatures::default();
-    let mut dynamic_rendering_features =
-      vk::PhysicalDeviceDynamicRenderingFeatures::default();
     let mut synchronization2_features =
       vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
     let mut shader_demote_to_helper_invocation_features =
       vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures::default()
         .shader_demote_to_helper_invocation(true);
+    let mut dynamic_rendering_features =
+      vk::PhysicalDeviceDynamicRenderingFeatures::default()
+        .dynamic_rendering(true);
     let mut dynamic_rendering_local_read_features =
       vk::PhysicalDeviceDynamicRenderingLocalReadFeaturesKHR::default()
         .dynamic_rendering_local_read(true);
@@ -660,10 +662,10 @@ impl HalaLogicalDevice {
       .push_next(&mut buffer_device_address_features)
       .push_next(&mut shader_draw_parameters_features)
       .push_next(&mut scalar_block_layout_features)
-      .push_next(&mut dynamic_rendering_features)
       .push_next(&mut synchronization2_features)
       .push_next(&mut shader_demote_to_helper_invocation_features)
-      .push_next(&mut timeline_semaphore_features);
+      .push_next(&mut timeline_semaphore_features)
+      .push_next(&mut dynamic_rendering_features);
     if !cfg!(debug_assertions) {
       // These features will cause nSight stop working.
       // So only enable them in release mode.
