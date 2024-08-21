@@ -1142,6 +1142,7 @@ impl std::convert::From<HalaDynamicState> for vk::DynamicState {
 /// The blend state.
 #[derive(Serialize, Deserialize)]
 pub struct HalaBlendState {
+  #[serde(default = "HalaBlendState::default_enable")]
   pub enable: bool,
   pub src_factor: HalaBlendFactor,
   pub dst_factor: HalaBlendFactor,
@@ -1170,18 +1171,20 @@ impl Default for HalaBlendState {
 /// The blend state implementation.
 impl HalaBlendState {
 
-    pub fn new(
-      src_factor: HalaBlendFactor,
-      dst_factor: HalaBlendFactor,
-      op: HalaBlendOp,
-    ) -> Self {
-      Self {
-        enable: true,
-        src_factor,
-        dst_factor,
-        op,
-      }
+  pub(crate) fn default_enable() -> bool { true }
+
+  pub fn new(
+    src_factor: HalaBlendFactor,
+    dst_factor: HalaBlendFactor,
+    op: HalaBlendOp,
+  ) -> Self {
+    Self {
+      enable: true,
+      src_factor,
+      dst_factor,
+      op,
     }
+  }
 
 }
 
