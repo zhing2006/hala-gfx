@@ -1142,6 +1142,7 @@ impl std::convert::From<HalaDynamicState> for vk::DynamicState {
 /// The blend state.
 #[derive(Serialize, Deserialize)]
 pub struct HalaBlendState {
+  pub enable: bool,
   pub src_factor: HalaBlendFactor,
   pub dst_factor: HalaBlendFactor,
   pub op: HalaBlendOp,
@@ -1158,6 +1159,7 @@ impl AsRef<HalaBlendState> for HalaBlendState {
 impl Default for HalaBlendState {
   fn default() -> Self {
     Self {
+      enable: true,
       src_factor: HalaBlendFactor::ONE,
       dst_factor: HalaBlendFactor::ZERO,
       op: HalaBlendOp::ADD,
@@ -1174,6 +1176,7 @@ impl HalaBlendState {
       op: HalaBlendOp,
     ) -> Self {
       Self {
+        enable: true,
         src_factor,
         dst_factor,
         op,
@@ -2108,7 +2111,7 @@ impl HalaGraphicsPipeline {
 
     let color_blend_attachments = color_blends.iter().zip(alpha_blends).map(|(color_blend, alpha_blend)| {
       vk::PipelineColorBlendAttachmentState::default()
-        .blend_enable(true)
+        .blend_enable(color_blend.as_ref().enable && alpha_blend.as_ref().enable)
         .src_color_blend_factor(color_blend.as_ref().src_factor.into())
         .dst_color_blend_factor(color_blend.as_ref().dst_factor.into())
         .color_blend_op(color_blend.as_ref().op.into())
