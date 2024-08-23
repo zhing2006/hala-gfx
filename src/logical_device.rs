@@ -566,7 +566,8 @@ impl HalaLogicalDevice {
       ash::khr::draw_indirect_count::NAME.as_ptr(),
       ash::khr::dynamic_rendering::NAME.as_ptr(),
     ];
-    if !cfg!(debug_assertions) {
+    #[cfg(not(feature = "nsight"))]
+    {
       // These extensions will cause nSight stop working.
       // So only enable them in release mode.
       extension_name_ptrs.push(ash::khr::maintenance5::NAME.as_ptr());
@@ -592,10 +593,6 @@ impl HalaLogicalDevice {
 
     let mut maintenance4_features = vk::PhysicalDeviceMaintenance4Features::default()
       .maintenance4(true);
-    let mut maintenance5_features = vk::PhysicalDeviceMaintenance5FeaturesKHR::default()
-      .maintenance5(true);
-    let mut maintenance6_features = vk::PhysicalDeviceMaintenance6FeaturesKHR::default()
-      .maintenance6(true);
     let mut descriptor_indexing_features = vk::PhysicalDeviceDescriptorIndexingFeatures::default()
       .shader_input_attachment_array_dynamic_indexing(true)
       .shader_uniform_texel_buffer_array_dynamic_indexing(true)
@@ -632,9 +629,6 @@ impl HalaLogicalDevice {
     let mut dynamic_rendering_features =
       vk::PhysicalDeviceDynamicRenderingFeatures::default()
         .dynamic_rendering(true);
-    let mut dynamic_rendering_local_read_features =
-      vk::PhysicalDeviceDynamicRenderingLocalReadFeaturesKHR::default()
-        .dynamic_rendering_local_read(true);
     let mut timeline_semaphore_features =
       vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
         .timeline_semaphore(true);
@@ -666,12 +660,27 @@ impl HalaLogicalDevice {
       .push_next(&mut shader_demote_to_helper_invocation_features)
       .push_next(&mut timeline_semaphore_features)
       .push_next(&mut dynamic_rendering_features);
-    if !cfg!(debug_assertions) {
+    #[cfg(not(feature = "nsight"))]
+    let mut maintenance5_features = vk::PhysicalDeviceMaintenance5FeaturesKHR::default()
+      .maintenance5(true);
+    #[cfg(not(feature = "nsight"))]
+    let mut maintenance6_features = vk::PhysicalDeviceMaintenance6FeaturesKHR::default()
+      .maintenance6(true);
+    #[cfg(not(feature = "nsight"))]
+    let mut shader_float_controls2_features = vk::PhysicalDeviceShaderFloatControls2FeaturesKHR::default()
+      .shader_float_controls2(true);
+    #[cfg(not(feature = "nsight"))]
+    let mut dynamic_rendering_local_read_features =
+      vk::PhysicalDeviceDynamicRenderingLocalReadFeaturesKHR::default()
+        .dynamic_rendering_local_read(true);
+    #[cfg(not(feature = "nsight"))]
+    {
       // These features will cause nSight stop working.
       // So only enable them in release mode.
       features2 = features2
         .push_next(&mut maintenance5_features)
         .push_next(&mut maintenance6_features)
+        .push_next(&mut shader_float_controls2_features)
         .push_next(&mut dynamic_rendering_local_read_features);
     }
     if gpu_req.require_mesh_shader {
