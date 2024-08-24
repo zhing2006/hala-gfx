@@ -18,6 +18,7 @@ use crate::{
   HalaRenderPass,
   HalaSwapchain,
   HalaResolveModeFlags,
+  HalaAttachmentStoreOp,
 };
 
 /// The command buffer type.
@@ -435,14 +436,14 @@ impl HalaCommandBufferSet {
     }
   }
 
-  /// Begin rendering.
+  /// Begin rendering to the swapchain.
   /// param index: The index of the command buffer.
   /// param swapchain: The swapchain.
   /// param render_area: The render area(x, y, width, height).
   /// param color_clear_value: The color clear value.
   /// param depth_clear_value: The depth clear value.
   /// param stencil_clear_value: The stencil clear value.
-  pub fn begin_rendering(
+  pub fn begin_rendering_with_swapchain(
     &self,
     index: usize,
     swapchain: &HalaSwapchain,
@@ -511,7 +512,7 @@ impl HalaCommandBufferSet {
     }
   }
 
-  /// Begin multisample rendering.
+  /// Begin multisample rendering to the swapchain.
   /// param index: The index of the command buffer.
   /// param swapchain: The swapchain.
   /// param render_area: The render area(x, y, width, height).
@@ -520,7 +521,7 @@ impl HalaCommandBufferSet {
   /// param stencil_clear_value: The stencil clear value.
   /// param color_multisample_image: The color multisample image.
   /// param depth_stencil_multisample_image: The depth stencil multisample image.
-  pub fn begin_rendering_with_multisample(
+  pub fn begin_rendering_with_swapchain_multisample(
     &self,
     index: usize,
     swapchain: &HalaSwapchain,
@@ -635,6 +636,48 @@ impl HalaCommandBufferSet {
   )
     where T: AsRef<HalaImage>
   {
+    self.begin_rendering_with(
+      index,
+      color_images,
+      depth_image,
+      render_area,
+      color_clear_values,
+      depth_clear_value,
+      stencil_clear_value,
+      HalaAttachmentStoreOp::STORE,
+      HalaAttachmentStoreOp::DONT_CARE,
+      HalaAttachmentStoreOp::DONT_CARE,
+    );
+  }
+
+  /// Begin rendering with the specified render targets.
+  /// param index: The index of the command buffer.
+  /// param color_images: The color images.
+  /// param depth_image: The depth image.
+  /// param render_area: The render area(x, y, width, height).
+  /// param color_clear_values: The color clear values.
+  /// param depth_clear_value: The depth clear value.
+  /// param stencil_clear_value: The stencil clear value.
+  /// param color_store_op: The color store operation.
+  /// param depth_store_op: The depth store operation.
+  /// param stencil_store_op: The stencil store operation.
+  /// return: The result.
+  #[allow(clippy::too_many_arguments)]
+  pub fn begin_rendering_with<T>(
+    &self,
+    index: usize,
+    color_images: &[T],
+    depth_image: Option<T>,
+    render_area: (i32, i32, u32, u32),
+    color_clear_values: &[Option<[f32; 4]>],
+    depth_clear_value: Option<f32>,
+    stencil_clear_value: Option<u32>,
+    color_store_op: HalaAttachmentStoreOp,
+    depth_store_op: HalaAttachmentStoreOp,
+    stencil_store_op: HalaAttachmentStoreOp,
+  )
+    where T: AsRef<HalaImage>
+  {
     let has_depth = depth_image.is_some();
     let has_stencil = depth_image.as_ref().map_or(false, |image| image.as_ref().format == HalaFormat::D16_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D24_UNORM_S8_UINT || image.as_ref().format == HalaFormat::D32_SFLOAT_S8_UINT);
 
@@ -643,7 +686,7 @@ impl HalaCommandBufferSet {
         .image_view(image.as_ref().view)
         .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
         .load_op(if clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-        .store_op(vk::AttachmentStoreOp::STORE)
+        .store_op(color_store_op.into())
         .clear_value(vk::ClearValue {
           color: vk::ClearColorValue {
             float32: clear_value.unwrap_or([0f32; 4]),
@@ -655,7 +698,7 @@ impl HalaCommandBufferSet {
       .image_view(depth_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if depth_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::DONT_CARE)
+      .store_op(depth_store_op.into())
       .clear_value(vk::ClearValue {
         depth_stencil: vk::ClearDepthStencilValue {
           depth: depth_clear_value.unwrap_or(1.0),
@@ -666,7 +709,7 @@ impl HalaCommandBufferSet {
       .image_view(depth_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::DONT_CARE)
+      .store_op(stencil_store_op.into())
       .clear_value(vk::ClearValue {
         depth_stencil: vk::ClearDepthStencilValue {
           depth: depth_clear_value.unwrap_or(1.0),
@@ -706,6 +749,12 @@ impl HalaCommandBufferSet {
   /// param color_clear_values: The color clear values.
   /// param depth_clear_value: The depth clear value.
   /// param stencil_clear_value: The stencil clear value.
+  /// param color_store_op: The color store operation.
+  /// param depth_store_op: The depth store operation.
+  /// param stencil_store_op: The stencil store operation.
+  /// param resolve_mode: The resolve mode.
+  /// param color_multisample_images: The color multisample images.
+  /// param depth_stencil_multisample_image: The depth stencil multisample image.
   /// return: The result.
   #[allow(clippy::too_many_arguments)]
   pub fn begin_rendering_with_rt_multisample<T>(
@@ -717,6 +766,57 @@ impl HalaCommandBufferSet {
     color_clear_values: &[Option<[f32; 4]>],
     depth_clear_value: Option<f32>,
     stencil_clear_value: Option<u32>,
+    resolve_mode: HalaResolveModeFlags,
+    color_multisample_images: &[T],
+    depth_stencil_multisample_image: Option<T>,
+  )
+    where T: AsRef<HalaImage>
+  {
+    self.begin_rendering_with_multisample(
+      index,
+      color_images,
+      depth_image,
+      render_area,
+      color_clear_values,
+      depth_clear_value,
+      stencil_clear_value,
+      HalaAttachmentStoreOp::STORE,
+      HalaAttachmentStoreOp::DONT_CARE,
+      HalaAttachmentStoreOp::DONT_CARE,
+      resolve_mode,
+      color_multisample_images,
+      depth_stencil_multisample_image,
+    )
+  }
+
+  /// Begin rendering with the specified multisample render targets.
+  /// param index: The index of the command buffer.
+  /// param color_images: The color images.
+  /// param depth_image: The depth image.
+  /// param render_area: The render area(x, y, width, height).
+  /// param color_clear_values: The color clear values.
+  /// param depth_clear_value: The depth clear value.
+  /// param stencil_clear_value: The stencil clear value.
+  /// param color_store_op: The color store operation.
+  /// param depth_store_op: The depth store operation.
+  /// param stencil_store_op: The stencil store operation.
+  /// param resolve_mode: The resolve mode.
+  /// param color_multisample_images: The color multisample images.
+  /// param depth_stencil_multisample_image: The depth stencil multisample image.
+  /// return: The result.
+  #[allow(clippy::too_many_arguments)]
+  pub fn begin_rendering_with_multisample<T>(
+    &self,
+    index: usize,
+    color_images: &[T],
+    depth_image: Option<T>,
+    render_area: (i32, i32, u32, u32),
+    color_clear_values: &[Option<[f32; 4]>],
+    depth_clear_value: Option<f32>,
+    stencil_clear_value: Option<u32>,
+    color_store_op: HalaAttachmentStoreOp,
+    depth_store_op: HalaAttachmentStoreOp,
+    stencil_store_op: HalaAttachmentStoreOp,
     resolve_mode: HalaResolveModeFlags,
     color_multisample_images: &[T],
     depth_stencil_multisample_image: Option<T>,
@@ -737,7 +837,7 @@ impl HalaCommandBufferSet {
         .image_view(multisample_image.as_ref().view)
         .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
         .load_op(if clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-        .store_op(vk::AttachmentStoreOp::STORE)
+        .store_op(color_store_op.into())
         .clear_value(vk::ClearValue {
           color: vk::ClearColorValue {
             float32: clear_value.unwrap_or([0f32; 4]),
@@ -753,7 +853,7 @@ impl HalaCommandBufferSet {
       .image_view(depth_multisample_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if depth_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::DONT_CARE)
+      .store_op(depth_store_op.into())
       .clear_value(vk::ClearValue {
         depth_stencil: vk::ClearDepthStencilValue {
           depth: depth_clear_value.unwrap_or(1.0),
@@ -767,7 +867,7 @@ impl HalaCommandBufferSet {
       .image_view(depth_multisample_image_view)
       .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
       .load_op(if stencil_clear_value.is_some() { vk::AttachmentLoadOp::CLEAR } else { vk::AttachmentLoadOp::DONT_CARE })
-      .store_op(vk::AttachmentStoreOp::DONT_CARE)
+      .store_op(stencil_store_op.into())
       .clear_value(vk::ClearValue {
         depth_stencil: vk::ClearDepthStencilValue {
           depth: depth_clear_value.unwrap_or(1.0),

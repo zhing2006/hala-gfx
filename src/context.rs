@@ -327,7 +327,7 @@ impl HalaContext {
         }
       );
     }
-    command_buffers.begin_rendering(
+    command_buffers.begin_rendering_with_swapchain(
       index,
       &self.swapchain,
       (0, 0, self.gpu_req.width, self.gpu_req.height),
