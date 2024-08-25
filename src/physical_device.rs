@@ -58,6 +58,11 @@ impl HalaPhysicalDevice {
       if properties.api_version < vk::make_api_version(0, gpu_req.version.0, gpu_req.version.1, gpu_req.version.2) {
         continue;
       }
+      let device_name = unsafe { std::ffi::CStr::from_ptr(properties.device_name.as_ptr()).to_str().unwrap().to_lowercase() };
+      let is_gpu_name_match = gpu_req.gpu_names.is_empty() || gpu_req.gpu_names.iter().any(|n| device_name.contains(n.to_lowercase().as_str()));
+      if !is_gpu_name_match {
+        continue;
+      }
       chosen = Some((p, properties));
       // If we find a discrete GPU, we use it directly.
       if properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU {
