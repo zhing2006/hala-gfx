@@ -59,6 +59,10 @@ impl HalaPhysicalDevice {
         continue;
       }
       chosen = Some((p, properties));
+      // If we find a discrete GPU, we use it directly.
+      if properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU {
+        break;
+      }
     }
 
     let (physical_device, properties) = chosen
