@@ -172,6 +172,7 @@ impl HalaBuffer {
   }
 
   /// Upload data to the buffer.
+  /// This is expensive and should not be done in a hot loop.
   /// param offset: The offset in the buffer.
   /// param data: The data to be uploaded.
   /// return: The result.
@@ -184,6 +185,7 @@ impl HalaBuffer {
   }
 
   /// Upload raw data to the buffer.
+  /// This is expensive and should not be done in a hot loop.
   /// param offset: The offset in the buffer.
   /// param data: The data to be uploaded.
   /// param size: The size of the data.
@@ -197,37 +199,6 @@ impl HalaBuffer {
       unsafe { std::ptr::copy_nonoverlapping(src, dst.add(offset), std::cmp::min(src_bytes, dst_bytes)) };
     } else {
       return Err(HalaGfxError::new("Cannot update memory of a GPU only buffer.", None));
-    }
-
-    Ok(())
-  }
-
-  /// Download data from the buffer.
-  /// param offset: The offset in the buffer.
-  /// param data: The data to be downloaded.
-  /// return: The result.
-  pub fn download_memory<T: Copy>(&self, offset: usize, data: &mut [T]) -> Result<(), HalaGfxError> {
-    let dst = data.as_mut_ptr() as *mut u8;
-    let dst_size = std::mem::size_of_val(data);
-    self.download_memory_raw(offset, dst, dst_size)?;
-
-    Ok(())
-  }
-
-  /// Download raw data from the buffer.
-  /// param offset: The offset in the buffer.
-  /// param data: The data to be downloaded.
-  /// param size: The size of the data.
-  /// return: The result.
-  pub fn download_memory_raw(&self, offset: usize, data: *mut u8, size: usize) -> Result<(), HalaGfxError> {
-    if self.memory_location != gpu_allocator::MemoryLocation::GpuOnly {
-      let src = self.allocation.mapped_ptr().unwrap().as_ptr() as *const u8;
-      let src_bytes = self.size as usize;
-      let dst = data;
-      let dst_bytes = size;
-      unsafe { std::ptr::copy_nonoverlapping(src.add(offset), dst, std::cmp::min(src_bytes, dst_bytes)) };
-    } else {
-      return Err(HalaGfxError::new("Cannot download memory of a GPU only buffer.", None));
     }
 
     Ok(())
@@ -314,6 +285,127 @@ impl HalaBuffer {
       )?;
 
       self.update_gpu_memory_with_buffer(data, &staging_buffer, command_buffers)?;
+    } else {
+      return Err(HalaGfxError::new("Cannot update GPU memory of a non GPU only buffer.", None));
+    }
+
+    Ok(())
+  }
+
+  /// Download data from the buffer.
+  /// This is expensive and should not be done in a hot loop.
+  /// param offset: The offset in the buffer.
+  /// param data: The data to be downloaded.
+  /// return: The result.
+  pub fn download_memory<T: Copy>(&self, offset: usize, data: &mut [T]) -> Result<(), HalaGfxError> {
+    let dst = data.as_mut_ptr() as *mut u8;
+    let dst_size = std::mem::size_of_val(data);
+    self.download_memory_raw(offset, dst, dst_size)?;
+
+    Ok(())
+  }
+
+  /// Download raw data from the buffer.
+  /// This is expensive and should not be done in a hot loop.
+  /// param offset: The offset in the buffer.
+  /// param data: The data to be downloaded.
+  /// param size: The size of the data.
+  /// return: The result.
+  pub fn download_memory_raw(&self, offset: usize, data: *mut u8, size: usize) -> Result<(), HalaGfxError> {
+    if self.memory_location != gpu_allocator::MemoryLocation::GpuOnly {
+      let src = self.allocation.mapped_ptr().unwrap().as_ptr() as *const u8;
+      let src_bytes = self.size as usize;
+      let dst = data;
+      let dst_bytes = size;
+      unsafe { std::ptr::copy_nonoverlapping(src.add(offset), dst, std::cmp::min(src_bytes, dst_bytes)) };
+    } else {
+      return Err(HalaGfxError::new("Cannot download memory of a GPU only buffer.", None));
+    }
+
+    Ok(())
+  }
+
+  /// Download data from the gpu buffer with a staging buffer.
+  /// This is expensive and should not be done in a hot loop.
+  /// param data: The data to be downloaded to.
+  /// param staging_buffer: The staging buffer.
+  /// param command_buffers: The transfer command buffer set.
+  /// return: The result.
+  pub fn download_gpu_memory_with_buffer<T: Copy>(
+    &self,
+    data: &mut [T],
+    staging_buffer: &HalaBuffer,
+    command_buffers: &HalaCommandBufferSet
+  ) -> Result<(), HalaGfxError> {
+    let dst = data.as_mut_ptr() as *mut u8;
+    let dst_size = std::mem::size_of_val(data);
+    self.download_gpu_memory_with_buffer_raw(dst, dst_size, staging_buffer, command_buffers)?;
+
+    Ok(())
+  }
+
+  /// Download raw data from the gpu buffer with a staging buffer.
+  /// This is expensive and should not be done in a hot loop.
+  /// param data: The data to be downloaded to.
+  /// param size: The size of the data.
+  /// param staging_buffer: The staging buffer.
+  /// param command_buffers: The transfer command buffer set.
+  /// return: The result.
+  pub fn download_gpu_memory_with_buffer_raw(
+    &self,
+    data: *mut u8,
+    size: usize,
+    staging_buffer: &HalaBuffer,
+    command_buffers: &HalaCommandBufferSet,
+  ) -> Result<(), HalaGfxError> {
+    if self.memory_location == gpu_allocator::MemoryLocation::GpuOnly {
+      unsafe {
+        let logical_device = self.logical_device.borrow();
+        let queue = match command_buffers.command_buffer_type {
+          HalaCommandBufferType::GRAPHICS => logical_device.get_graphics_queue(0),
+          HalaCommandBufferType::TRANSFER => logical_device.get_transfer_queue(0),
+          HalaCommandBufferType::COMPUTE => logical_device.get_compute_queue(0),
+          _ => return Err(HalaGfxError::new("Invalid command buffer type.", None)),
+        };
+        logical_device.execute_and_submit(command_buffers, 0, |logical_device, command_buffers, index| {
+          let copy_regions = [vk::BufferCopy::default()
+            .src_offset(0)
+            .dst_offset(0)
+            .size(self.size)];
+          logical_device.raw.cmd_copy_buffer(command_buffers.raw[index], self.raw, staging_buffer.raw, &copy_regions);
+        },
+        queue)?;
+      }
+
+      let src = staging_buffer.allocation.mapped_ptr().unwrap().as_ptr() as *mut u8;
+      let src_bytes = staging_buffer.size as usize;
+
+      let dst = data;
+      let dst_bytes = size;
+      unsafe { std::ptr::copy_nonoverlapping(src, dst, std::cmp::min(src_bytes, dst_bytes)) };
+    } else {
+      return Err(HalaGfxError::new("Cannot update GPU memory of a non GPU only buffer.", None));
+    }
+
+    Ok(())
+  }
+
+  /// Download data from the gpu buffer.
+  /// This is expensive and should not be done in a hot loop.
+  /// param data: The data to be uploaded.
+  /// param command_buffers: The transfer command buffer set.
+  /// return: The result.
+  pub fn download_gpu_memory<T: Copy>(&self, data: &mut [T], command_buffers: &HalaCommandBufferSet) -> Result<(), HalaGfxError> {
+    if self.memory_location == gpu_allocator::MemoryLocation::GpuOnly {
+      let staging_buffer = HalaBuffer::new(
+        Rc::clone(&self.logical_device),
+        std::mem::size_of_val(data) as u64,
+        HalaBufferUsageFlags::TRANSFER_DST,
+        HalaMemoryLocation::CpuToGpu,
+        "staging_buffer",
+      )?;
+
+      self.download_gpu_memory_with_buffer(data, &staging_buffer, command_buffers)?;
     } else {
       return Err(HalaGfxError::new("Cannot update GPU memory of a non GPU only buffer.", None));
     }
