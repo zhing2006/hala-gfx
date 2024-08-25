@@ -66,6 +66,12 @@ pub use crate::pools::{
   HalaDescriptorPool,
 };
 pub use crate::command_buffer::{
+  HalaIndirectDrawCommand,
+  HalaIndirectIndexedDrawCommand,
+  HalaIndirectDispatchCommand,
+  HalaIndirectDrawMeshTasksCommand,
+  HalaIndirectTraceRaysCommand,
+  HalaIndirectTraceRays2Command,
   HalaCommandBufferType,
   HalaCommandBufferLevel,
   HalaCommandBufferUsageFlags,

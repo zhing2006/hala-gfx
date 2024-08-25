@@ -21,6 +21,13 @@ use crate::{
   HalaAttachmentStoreOp,
 };
 
+pub type HalaIndirectDrawCommand = vk::DrawIndirectCommand;
+pub type HalaIndirectIndexedDrawCommand = vk::DrawIndexedIndirectCommand;
+pub type HalaIndirectDispatchCommand = vk::DispatchIndirectCommand;
+pub type HalaIndirectDrawMeshTasksCommand = vk::DrawMeshTasksIndirectCommandEXT;
+pub type HalaIndirectTraceRaysCommand = vk::TraceRaysIndirectCommandKHR;
+pub type HalaIndirectTraceRays2Command = vk::TraceRaysIndirectCommand2KHR;
+
 /// The command buffer type.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct HalaCommandBufferType(i32);
