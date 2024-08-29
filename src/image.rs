@@ -1,7 +1,16 @@
 use ash::vk;
 
 use crate::{
-  HalaBuffer, HalaCommandBufferSet, HalaFormat, HalaGfxError, HalaLogicalDevice, HalaMemoryLocation, HalaPipelineStageFlags2, HalaSampleCountFlags
+  HalaAccessFlags2,
+  HalaBuffer,
+  HalaCommandBufferSet,
+  HalaFormat,
+  HalaGfxError,
+  HalaImageLayout,
+  HalaLogicalDevice,
+  HalaMemoryLocation,
+  HalaPipelineStageFlags2,
+  HalaSampleCountFlags,
 };
 
 /// The image usage flags.
@@ -38,6 +47,7 @@ pub struct HalaImage {
   pub view: vk::ImageView,
   pub extent: vk::Extent3D,
   pub format: HalaFormat,
+  pub mip_levels: u32,
   pub memory_requirements: vk::MemoryRequirements,
   pub allocation: gpu_allocator::vulkan::Allocation,
   pub memory_location: gpu_allocator::MemoryLocation,
@@ -296,6 +306,7 @@ impl HalaImage {
         depth: 1,
       },
       format,
+      mip_levels,
       memory_requirements,
       allocation,
       memory_location: memory_location.into(),
@@ -440,6 +451,7 @@ impl HalaImage {
         depth,
       },
       format,
+      mip_levels: 1,
       memory_requirements,
       allocation,
       memory_location: memory_location.into(),
@@ -536,10 +548,188 @@ impl HalaImage {
     Ok(view)
   }
 
+  /// Generate mipmaps for the image.
+  /// param command_buffers: The command buffer set.
+  /// return: The result.
+  pub fn gen_mipmaps(
+    &self,
+    command_buffers: &HalaCommandBufferSet,
+  ) -> Result<(), HalaGfxError> {
+    unsafe {
+      let logical_device = self.logical_device.borrow();
+      let queue = match command_buffers.command_buffer_type {
+        crate::HalaCommandBufferType::GRAPHICS => logical_device.get_graphics_queue(0),
+        crate::HalaCommandBufferType::TRANSFER => logical_device.get_transfer_queue(0),
+        crate::HalaCommandBufferType::COMPUTE => logical_device.get_compute_queue(0),
+        _ => logical_device.get_graphics_queue(0),
+      };
+      logical_device.execute_and_submit(
+        command_buffers,
+        0,
+        |logical_device, command_buffers, index| {
+          for mip_level in 1..self.mip_levels {
+            let mip_width = std::cmp::max(1, self.extent.width >> (mip_level - 1));
+            let mip_height = std::cmp::max(1, self.extent.height >> (mip_level - 1));
+
+            let input_barriers = [
+              vk::ImageMemoryBarrier2::default()
+                .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+                .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+                .dst_access_mask(vk::AccessFlags2::TRANSFER_READ)
+                .old_layout(vk::ImageLayout::UNDEFINED)
+                .new_layout(vk::ImageLayout::TRANSFER_SRC_OPTIMAL)
+                .image(self.raw)
+                .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                .subresource_range(
+                  vk::ImageSubresourceRange::default()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .base_mip_level(mip_level - 1)
+                    .level_count(1)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                ),
+              vk::ImageMemoryBarrier2::default()
+                .src_stage_mask(vk::PipelineStageFlags2::NONE)
+                .src_access_mask(vk::AccessFlags2::NONE)
+                .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+                .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                .old_layout(vk::ImageLayout::UNDEFINED)
+                .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                .image(self.raw)
+                .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                .subresource_range(
+                  vk::ImageSubresourceRange::default()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .base_mip_level(mip_level)
+                    .level_count(1)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                ),
+            ];
+
+            let input_dependency_info = vk::DependencyInfoKHR::default()
+              .image_memory_barriers(&input_barriers);
+            logical_device.raw.cmd_pipeline_barrier2(
+              command_buffers.raw[index],
+              &input_dependency_info,
+            );
+
+            logical_device.raw.cmd_pipeline_barrier2(command_buffers.raw[index], &input_dependency_info);
+
+            let blit = vk::ImageBlit2::default()
+              .src_offsets([
+                vk::Offset3D::default(),
+                vk::Offset3D {
+                  x: mip_width as i32,
+                  y: mip_height as i32,
+                  z: 1,
+                },
+              ])
+              .src_subresource(vk::ImageSubresourceLayers::default()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .mip_level(mip_level - 1)
+                .base_array_layer(0)
+                .layer_count(1)
+              )
+              .dst_offsets([
+                vk::Offset3D::default(),
+                vk::Offset3D {
+                  x: if mip_width > 1 { mip_width / 2 } else { 1 } as i32,
+                  y: if mip_height > 1 { mip_height / 2 } else { 1 } as i32,
+                  z: 1,
+                },
+              ])
+              .dst_subresource(vk::ImageSubresourceLayers::default()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .mip_level(mip_level)
+                .base_array_layer(0)
+                .layer_count(1)
+              );
+
+            let blit_info = vk::BlitImageInfo2::default()
+              .src_image(self.raw)
+              .src_image_layout(vk::ImageLayout::TRANSFER_SRC_OPTIMAL)
+              .dst_image(self.raw)
+              .dst_image_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+              .regions(std::slice::from_ref(&blit));
+
+            logical_device.raw.cmd_blit_image2(command_buffers.raw[index], &blit_info);
+
+            let output_barriers = [
+              vk::ImageMemoryBarrier2::default()
+                .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+                .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                .dst_stage_mask(vk::PipelineStageFlags2::ALL_GRAPHICS)
+                .dst_access_mask(vk::AccessFlags2::SHADER_READ)
+                .old_layout(vk::ImageLayout::UNDEFINED)
+                .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+                .image(self.raw)
+                .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+                .subresource_range(
+                  vk::ImageSubresourceRange::default()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .base_mip_level(mip_level - 1)
+                    .level_count(1)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                ),
+            ];
+
+            let output_dependency_info = vk::DependencyInfoKHR::default()
+              .image_memory_barriers(&output_barriers);
+            logical_device.raw.cmd_pipeline_barrier2(
+              command_buffers.raw[index],
+              &output_dependency_info,
+            );
+
+            logical_device.raw.cmd_pipeline_barrier2(command_buffers.raw[index], &output_dependency_info);
+          }
+
+          let output_barrier = vk::ImageMemoryBarrier2::default()
+            .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+            .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+            .dst_stage_mask(vk::PipelineStageFlags2::ALL_GRAPHICS)
+            .dst_access_mask(vk::AccessFlags2::SHADER_READ)
+            .old_layout(vk::ImageLayout::UNDEFINED)
+            .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+            .image(self.raw)
+            .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+            .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
+            .subresource_range(
+              vk::ImageSubresourceRange::default()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .base_mip_level(self.mip_levels - 1)
+                .level_count(1)
+                .base_array_layer(0)
+                .layer_count(1)
+            );
+
+          let output_dependency_info = vk::DependencyInfoKHR::default()
+            .image_memory_barriers(std::slice::from_ref(&output_barrier));
+          logical_device.raw.cmd_pipeline_barrier2(
+            command_buffers.raw[index],
+            &output_dependency_info,
+          );
+
+          logical_device.raw.cmd_pipeline_barrier2(command_buffers.raw[index], &output_dependency_info);
+        },
+        queue,
+      )?;
+    }
+
+    Ok(())
+  }
+
   /// Upload data to the gpu image with a staging buffer.
   /// This is expensive and should not be done in a hot loop.
   /// param data: The data to be uploaded.
   /// param dst_stage_mask: The destination stage mask.
+  /// param dst_access_mask: The destination access mask.
+  /// param dst_layout: The destination layout.
   /// param staging_buffer: The staging buffer.
   /// param command_buffers: The transfer command buffer set.
   /// return: The result.
@@ -547,12 +737,14 @@ impl HalaImage {
     &self,
     data: &[T],
     dst_stage_mask: HalaPipelineStageFlags2,
+    dst_access_mask: HalaAccessFlags2,
+    dst_layout: HalaImageLayout,
     staging_buffer: &HalaBuffer,
     command_buffers: &HalaCommandBufferSet,
   ) -> Result<(), HalaGfxError> {
     let src = data.as_ptr() as *const u8;
     let src_size = std::mem::size_of_val(data);
-    self.update_gpu_memory_with_buffer_raw(src, src_size, dst_stage_mask, staging_buffer, command_buffers)?;
+    self.update_gpu_memory_with_buffer_raw(src, src_size, dst_stage_mask, dst_access_mask, dst_layout, staging_buffer, command_buffers)?;
 
     Ok(())
   }
@@ -562,6 +754,8 @@ impl HalaImage {
   /// param data: The data to be uploaded.
   /// param size: The size of the data.
   /// param dst_stage_mask: The destination stage mask.
+  /// param dst_access_mask: The destination access mask.
+  /// param dst_layout: The destination layout.
   /// param staging_buffer: The staging buffer.
   /// param command_buffers: The transfer command buffer set.
   /// return: The result.
@@ -570,6 +764,8 @@ impl HalaImage {
     data: *const u8,
     size: usize,
     dst_stage_mask: HalaPipelineStageFlags2,
+    dst_access_mask: HalaAccessFlags2,
+    dst_layout: HalaImageLayout,
     staging_buffer: &HalaBuffer,
     command_buffers: &HalaCommandBufferSet,
   ) -> Result<(), HalaGfxError> {
@@ -642,9 +838,9 @@ impl HalaImage {
               .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
               .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
               .dst_stage_mask(dst_stage_mask.into())
-              .dst_access_mask(vk::AccessFlags2::SHADER_READ)
+              .dst_access_mask(dst_access_mask.into())
               .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-              .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+              .new_layout(dst_layout.into())
               .image(self.raw)
               .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
               .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
