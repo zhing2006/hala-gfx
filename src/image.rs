@@ -87,6 +87,7 @@ impl Drop for HalaImage {
 
 /// The implementation of the image.
 impl HalaImage {
+
   /// Create a 2D image with dedicated memory.
   /// param logical_device: The logical device.
   /// param usage: The image usage flags.
@@ -118,6 +119,46 @@ impl HalaImage {
       height,
       mip_levels,
       array_layers,
+      false,
+      HalaSampleCountFlags::TYPE_1,
+      memory_location,
+      false,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D image with dedicated memory and seperate views.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn new_2d_with_seperate_views(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      true,
       HalaSampleCountFlags::TYPE_1,
       memory_location,
       false,
@@ -156,6 +197,46 @@ impl HalaImage {
       height,
       mip_levels,
       array_layers,
+      false,
+      HalaSampleCountFlags::TYPE_1,
+      memory_location,
+      true,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D image with managed memory and seperate views.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn new_2d_with_seperate_views_managed(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      true,
       HalaSampleCountFlags::TYPE_1,
       memory_location,
       true,
@@ -196,6 +277,48 @@ impl HalaImage {
       height,
       mip_levels,
       array_layers,
+      false,
+      samples,
+      memory_location,
+      false,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D multisample image with dedicated memory and seperate views.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param samples: The number of samples.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn with_2d_multisample_and_seperate_views(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    samples: HalaSampleCountFlags,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      true,
       samples,
       memory_location,
       false,
@@ -236,6 +359,48 @@ impl HalaImage {
       height,
       mip_levels,
       array_layers,
+      false,
+      samples,
+      memory_location,
+      true,
+      debug_name,
+    )
+  }
+
+  /// Create a 2D multisample image with managed memory and seperate views.
+  /// param logical_device: The logical device.
+  /// param usage: The image usage flags.
+  /// param format: The image format.
+  /// param width: The image width.
+  /// param height: The image height.
+  /// param mip_levels: The number of mip levels.
+  /// param array_layers: The number of array layers.
+  /// param samples: The number of samples.
+  /// param memory_location: The memory location.
+  /// param debug_name: The debug name.
+  /// return: The image.
+  #[allow(clippy::too_many_arguments)]
+  pub fn with_2d_multisample_and_seperate_views_managed(
+    logical_device: std::rc::Rc<std::cell::RefCell<HalaLogicalDevice>>,
+    usage: HalaImageUsageFlags,
+    format: HalaFormat,
+    width: u32,
+    height: u32,
+    mip_levels: u32,
+    array_layers: u32,
+    samples: HalaSampleCountFlags,
+    memory_location: HalaMemoryLocation,
+    debug_name: &str,
+  ) -> Result<Self, HalaGfxError> {
+    Self::new_2d_impl(
+      logical_device,
+      usage,
+      format,
+      width,
+      height,
+      mip_levels,
+      array_layers,
+      true,
       samples,
       memory_location,
       true,
@@ -251,6 +416,7 @@ impl HalaImage {
   /// param height: The image height.
   /// param mip_levels: The number of mip levels.
   /// param array_layers: The number of array layers.
+  /// param require_seperate_views: Whether to require seperate views.
   /// param samples: The number of samples.
   /// param memory_location: The memory location.
   /// param use_managed_memory: Whether to use managed memory.
@@ -265,6 +431,7 @@ impl HalaImage {
     height: u32,
     mip_levels: u32,
     array_layers: u32,
+    require_seperate_views: bool,
     samples: HalaSampleCountFlags,
     memory_location: HalaMemoryLocation,
     use_managed_memory: bool,
@@ -301,6 +468,7 @@ impl HalaImage {
       format.into(),
       mip_levels,
       array_layers,
+      require_seperate_views,
       debug_name,
     )?;
 
@@ -449,6 +617,7 @@ impl HalaImage {
       format.into(),
       1,
       1,
+      false,
       debug_name,
     )?;
 
@@ -526,6 +695,7 @@ impl HalaImage {
   /// param format: The image format.
   /// param mip_levels: The number of mip levels.
   /// param array_layers: The number of array layers.
+  /// param require_seperate_views: Whether to require seperate views.
   /// param debug_name: The debug name.
   /// return: The image view.
   fn create_view(
@@ -535,6 +705,7 @@ impl HalaImage {
     format: vk::Format,
     mip_levels: u32,
     array_layers: u32,
+    require_seperate_views: bool,
     debug_name: &str,
   ) -> Result<
     (
@@ -568,57 +739,61 @@ impl HalaImage {
     };
 
     let mut mip_views = Vec::new();
-    for mip_level in 0..mip_levels {
-      let mip_view_info = vk::ImageViewCreateInfo::default()
-        .image(image)
-        .view_type(view_type)
-        .format(format)
-        .subresource_range(vk::ImageSubresourceRange {
-          aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
-          base_mip_level: mip_level,
-          level_count: 1,
-          base_array_layer: 0,
-          layer_count: array_layers,
-        });
+    if require_seperate_views {
+      for mip_level in 0..mip_levels {
+        let mip_view_info = vk::ImageViewCreateInfo::default()
+          .image(image)
+          .view_type(view_type)
+          .format(format)
+          .subresource_range(vk::ImageSubresourceRange {
+            aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
+            base_mip_level: mip_level,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: array_layers,
+          });
 
-      let mip_view = unsafe {
-        let logical_device = logical_device.borrow();
-        let mip_view = logical_device.raw.create_image_view(&mip_view_info, None)
-          .map_err(|err| HalaGfxError::new("Failed to create mip view.", Some(Box::new(err))))?;
-        logical_device.set_debug_name(
-          mip_view,
-          &format!("{}_mip_view_{}", debug_name, mip_level),
-        ).map_err(|err| HalaGfxError::new("Failed to set debug name for mip view.", Some(Box::new(err))))?;
-        mip_view
-      };
-      mip_views.push(mip_view);
+        let mip_view = unsafe {
+          let logical_device = logical_device.borrow();
+          let mip_view = logical_device.raw.create_image_view(&mip_view_info, None)
+            .map_err(|err| HalaGfxError::new("Failed to create mip view.", Some(Box::new(err))))?;
+          logical_device.set_debug_name(
+            mip_view,
+            &format!("{}_mip_view_{}", debug_name, mip_level),
+          ).map_err(|err| HalaGfxError::new("Failed to set debug name for mip view.", Some(Box::new(err))))?;
+          mip_view
+        };
+        mip_views.push(mip_view);
+      }
     }
 
     let mut array_views = Vec::new();
-    for array_layer in 0..array_layers {
-      let array_view_info = vk::ImageViewCreateInfo::default()
-        .image(image)
-        .view_type(view_type)
-        .format(format)
-        .subresource_range(vk::ImageSubresourceRange {
-          aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
-          base_mip_level: 0,
-          level_count: mip_levels,
-          base_array_layer: array_layer,
-          layer_count: 1,
-        });
+    if require_seperate_views {
+      for array_layer in 0..array_layers {
+        let array_view_info = vk::ImageViewCreateInfo::default()
+          .image(image)
+          .view_type(view_type)
+          .format(format)
+          .subresource_range(vk::ImageSubresourceRange {
+            aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
+            base_mip_level: 0,
+            level_count: mip_levels,
+            base_array_layer: array_layer,
+            layer_count: 1,
+          });
 
-      let array_view = unsafe {
-        let logical_device = logical_device.borrow();
-        let array_view = logical_device.raw.create_image_view(&array_view_info, None)
-          .map_err(|err| HalaGfxError::new("Failed to create array view.", Some(Box::new(err))))?;
-        logical_device.set_debug_name(
-          array_view,
-          &format!("{}_array_view_{}", debug_name, array_layer),
-        ).map_err(|err| HalaGfxError::new("Failed to set debug name for array view.", Some(Box::new(err))))?;
-        array_view
-      };
-      array_views.push(array_view);
+        let array_view = unsafe {
+          let logical_device = logical_device.borrow();
+          let array_view = logical_device.raw.create_image_view(&array_view_info, None)
+            .map_err(|err| HalaGfxError::new("Failed to create array view.", Some(Box::new(err))))?;
+          logical_device.set_debug_name(
+            array_view,
+            &format!("{}_array_view_{}", debug_name, array_layer),
+          ).map_err(|err| HalaGfxError::new("Failed to set debug name for array view.", Some(Box::new(err))))?;
+          array_view
+        };
+        array_views.push(array_view);
+      }
     }
 
     Ok((view, mip_views, array_views))
@@ -944,4 +1119,6 @@ impl HalaImage {
     }
 
     Ok(())
-  }}
+  }
+
+}
