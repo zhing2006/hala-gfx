@@ -706,7 +706,7 @@ impl HalaCommandBufferSet {
     )
   }
 
-  /// Begin rendering with the specified multisample render targets, EX version.
+  /// Begin rendering with the specified render targets, EX version.
   /// param index: The index of the command buffer.
   /// param color_images: The color images.
   /// param depth_image: The depth image.
@@ -794,6 +794,83 @@ impl HalaCommandBufferSet {
     };
     let rendering_info = if has_stencil {
       rendering_info.stencil_attachment(&stencil_attachment_info)
+    } else {
+      rendering_info
+    };
+
+    unsafe {
+      let logical_device = self.logical_device.borrow();
+      logical_device.raw.cmd_begin_rendering(self.raw[index], &rendering_info);
+    }
+  }
+
+  /// Begin rendering with the specified render target views, EX version.
+  /// param index: The index of the command buffer.
+  /// param color_views: The color views.
+  /// param depth_view: The depth view.
+  /// param render_area: The render area(x, y, width, height).
+  /// param color_clear_values: The color clear values.
+  /// param depth_clear_value: The depth clear value.
+  /// param stencil_clear_value: The stencil clear value.
+  /// param color_load_ops: The color load operations.
+  /// param depth_load_op: The depth load operation.
+  /// param stencil_load_op: The stencil load operation.
+  /// param color_store_ops: The color store operations.
+  /// param depth_store_op: The depth store operation.
+  /// param stencil_store_op: The stencil store operation.
+  #[allow(clippy::too_many_arguments)]
+  pub fn begin_rendering_with_view_ex(
+    &self,
+    index: usize,
+    color_views: &[vk::ImageView],
+    depth_view: Option<vk::ImageView>,
+    render_area: (i32, i32, u32, u32),
+    color_clear_values: &[Option<[f32; 4]>],
+    depth_clear_value: Option<f32>,
+    stencil_clear_value: Option<u32>,
+    color_load_ops: &[HalaAttachmentLoadOp],
+    depth_load_op: HalaAttachmentLoadOp,
+    color_store_ops: &[HalaAttachmentStoreOp],
+    depth_store_op: HalaAttachmentStoreOp,
+  ) {
+    assert!(color_views.len() == color_clear_values.len() && color_views.len() == color_load_ops.len() && color_views.len() == color_store_ops.len());
+
+    let has_depth = depth_view.is_some();
+
+    let color_attachment_info = color_views.iter().zip(color_clear_values).zip(color_load_ops).zip(color_store_ops).map(|(((view, clear_value), load_op), store_op)| {
+      vk::RenderingAttachmentInfo::default()
+        .image_view(*view)
+        .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+        .load_op((*load_op).into())
+        .store_op((*store_op).into())
+        .clear_value(vk::ClearValue {
+          color: vk::ClearColorValue {
+            float32: clear_value.unwrap_or([0f32; 4]),
+          },
+        })
+    }).collect::<Vec<_>>();
+    let depth_image_view = depth_view.as_ref().map_or(vk::ImageView::null(), |view| *view);
+    let depth_attachment_info = vk::RenderingAttachmentInfo::default()
+      .image_view(depth_image_view)
+      .image_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+      .load_op(depth_load_op.into())
+      .store_op(depth_store_op.into())
+      .clear_value(vk::ClearValue {
+        depth_stencil: vk::ClearDepthStencilValue {
+          depth: depth_clear_value.unwrap_or(1.0),
+          stencil: stencil_clear_value.unwrap_or(0),
+        },
+      });
+
+    let rendering_info = vk::RenderingInfo::default()
+      .render_area(vk::Rect2D {
+        offset: vk::Offset2D { x: render_area.0, y: render_area.1 },
+        extent: vk::Extent2D { width: render_area.2, height: render_area.3 },
+      })
+      .layer_count(1)
+      .color_attachments(color_attachment_info.as_slice());
+    let rendering_info = if has_depth {
+      rendering_info.depth_attachment(&depth_attachment_info)
     } else {
       rendering_info
     };

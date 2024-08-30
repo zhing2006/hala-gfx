@@ -48,6 +48,9 @@ pub struct HalaImage {
   pub extent: vk::Extent3D,
   pub format: HalaFormat,
   pub mip_levels: u32,
+  pub mip_views: Vec<vk::ImageView>,
+  pub array_layers: u32,
+  pub array_views: Vec<vk::ImageView>,
   pub memory_requirements: vk::MemoryRequirements,
   pub allocation: gpu_allocator::vulkan::Allocation,
   pub memory_location: gpu_allocator::MemoryLocation,
@@ -67,6 +70,12 @@ impl Drop for HalaImage {
   fn drop(&mut self) {
     unsafe {
       let mut logical_device = self.logical_device.borrow_mut();
+      for mip_view in self.mip_views.iter() {
+        logical_device.raw.destroy_image_view(*mip_view, None);
+      }
+      for array_view in self.array_views.iter() {
+        logical_device.raw.destroy_image_view(*array_view, None);
+      }
       logical_device.raw.destroy_image_view(self.view, None);
       let allocation = std::mem::take(&mut self.allocation);
       logical_device.gpu_allocator.free(allocation).unwrap();
@@ -285,7 +294,7 @@ impl HalaImage {
       debug_name,
     )?;
 
-    let view = Self::create_view(
+    let (view, mip_views, array_views) = Self::create_view(
       &logical_device,
       image,
       vk::ImageViewType::TYPE_2D,
@@ -307,6 +316,9 @@ impl HalaImage {
       },
       format,
       mip_levels,
+      mip_views,
+      array_layers,
+      array_views,
       memory_requirements,
       allocation,
       memory_location: memory_location.into(),
@@ -430,7 +442,7 @@ impl HalaImage {
       debug_name,
     )?;
 
-    let view = Self::create_view(
+    let (view, mip_views, array_views) = Self::create_view(
       &logical_device,
       image,
       vk::ImageViewType::TYPE_3D,
@@ -452,6 +464,9 @@ impl HalaImage {
       },
       format,
       mip_levels: 1,
+      mip_views,
+      array_layers: 1,
+      array_views,
       memory_requirements,
       allocation,
       memory_location: memory_location.into(),
@@ -521,7 +536,14 @@ impl HalaImage {
     mip_levels: u32,
     array_layers: u32,
     debug_name: &str,
-  ) -> Result<vk::ImageView, HalaGfxError> {
+  ) -> Result<
+    (
+      vk::ImageView,
+      Vec<vk::ImageView>,
+      Vec<vk::ImageView>,
+    ),
+    HalaGfxError
+  > {
     let view_info = vk::ImageViewCreateInfo::default()
       .image(image)
       .view_type(view_type)
@@ -545,7 +567,61 @@ impl HalaImage {
       view
     };
 
-    Ok(view)
+    let mut mip_views = Vec::new();
+    for mip_level in 0..mip_levels {
+      let mip_view_info = vk::ImageViewCreateInfo::default()
+        .image(image)
+        .view_type(view_type)
+        .format(format)
+        .subresource_range(vk::ImageSubresourceRange {
+          aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
+          base_mip_level: mip_level,
+          level_count: 1,
+          base_array_layer: 0,
+          layer_count: array_layers,
+        });
+
+      let mip_view = unsafe {
+        let logical_device = logical_device.borrow();
+        let mip_view = logical_device.raw.create_image_view(&mip_view_info, None)
+          .map_err(|err| HalaGfxError::new("Failed to create mip view.", Some(Box::new(err))))?;
+        logical_device.set_debug_name(
+          mip_view,
+          &format!("{}_mip_view_{}", debug_name, mip_level),
+        ).map_err(|err| HalaGfxError::new("Failed to set debug name for mip view.", Some(Box::new(err))))?;
+        mip_view
+      };
+      mip_views.push(mip_view);
+    }
+
+    let mut array_views = Vec::new();
+    for array_layer in 0..array_layers {
+      let array_view_info = vk::ImageViewCreateInfo::default()
+        .image(image)
+        .view_type(view_type)
+        .format(format)
+        .subresource_range(vk::ImageSubresourceRange {
+          aspect_mask: if format == vk::Format::D16_UNORM || format == vk::Format::D32_SFLOAT || format == vk::Format::D24_UNORM_S8_UINT { vk::ImageAspectFlags::DEPTH } else { vk::ImageAspectFlags::COLOR },
+          base_mip_level: 0,
+          level_count: mip_levels,
+          base_array_layer: array_layer,
+          layer_count: 1,
+        });
+
+      let array_view = unsafe {
+        let logical_device = logical_device.borrow();
+        let array_view = logical_device.raw.create_image_view(&array_view_info, None)
+          .map_err(|err| HalaGfxError::new("Failed to create array view.", Some(Box::new(err))))?;
+        logical_device.set_debug_name(
+          array_view,
+          &format!("{}_array_view_{}", debug_name, array_layer),
+        ).map_err(|err| HalaGfxError::new("Failed to set debug name for array view.", Some(Box::new(err))))?;
+        array_view
+      };
+      array_views.push(array_view);
+    }
+
+    Ok((view, mip_views, array_views))
   }
 
   /// Generate mipmaps for the image.

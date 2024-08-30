@@ -478,6 +478,29 @@ impl HalaDescriptorSet {
     }
   }
 
+  /// Update the sampled images with view.
+  /// param index: The index.
+  /// param binding: The binding.
+  /// param views: The image views.
+  pub fn update_sampled_images_with_view(&self, index: usize, binding: u32, views: &[vk::ImageView]) {
+    let image_infos = views
+      .iter()
+      .map(|view| vk::DescriptorImageInfo::default()
+        .image_view(*view)
+        .image_layout(vk::ImageLayout::GENERAL))
+      .collect::<Vec<_>>();
+
+    let descriptor_write = vk::WriteDescriptorSet::default()
+      .dst_set(self.raw[index])
+      .dst_binding(binding)
+      .descriptor_type(vk::DescriptorType::SAMPLED_IMAGE)
+      .image_info(image_infos.as_slice());
+
+    unsafe {
+      self.logical_device.borrow().raw.update_descriptor_sets(&[descriptor_write], &[]);
+    }
+  }
+
   /// Update the samplers.
   /// param index: The index.
   /// param binding: The binding.
@@ -505,7 +528,7 @@ impl HalaDescriptorSet {
   /// Update the combined image samplers.
   /// param index: The index.
   /// param binding: The binding.
-  /// param images: The images.
+  /// param images_and_samplers: The images and samplers.
   pub fn update_combined_image_samplers<I, S>(
     &self,
     index: usize,
@@ -520,6 +543,37 @@ impl HalaDescriptorSet {
       .map(|(image, sampler)| vk::DescriptorImageInfo::default()
         .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
         .image_view(image.as_ref().view)
+        .sampler(sampler.as_ref().raw))
+      .collect::<Vec<_>>();
+
+    let descriptor_write = vk::WriteDescriptorSet::default()
+      .dst_set(self.raw[index])
+      .dst_binding(binding)
+      .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
+      .image_info(image_infos.as_slice());
+
+    unsafe {
+      self.logical_device.borrow().raw.update_descriptor_sets(&[descriptor_write], &[]);
+    }
+  }
+
+  /// Update the combined image samplers with view.
+  /// param index: The index.
+  /// param binding: The binding.
+  /// param views_and_samplers: The image views and samplers.
+  pub fn update_combined_image_samplers_with_view<S>(
+    &self,
+    index: usize,
+    binding: u32,
+    views_and_samplers: &[(vk::ImageView, S)],
+  )
+    where S: AsRef<crate::HalaSampler>
+  {
+    let image_infos = views_and_samplers
+      .iter()
+      .map(|(view, sampler)| vk::DescriptorImageInfo::default()
+        .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+        .image_view(*view)
         .sampler(sampler.as_ref().raw))
       .collect::<Vec<_>>();
 
