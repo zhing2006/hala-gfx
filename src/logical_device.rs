@@ -591,65 +591,36 @@ impl HalaLogicalDevice {
     };
     log::debug!("Extension names: {:?}", extension_name_ptrs.iter().map(|&ptr| unsafe { std::ffi::CStr::from_ptr(ptr) }).collect::<Vec<_>>() );
 
-    let mut maintenance4_features = vk::PhysicalDeviceMaintenance4Features::default()
-      .maintenance4(true);
-    let mut descriptor_indexing_features = vk::PhysicalDeviceDescriptorIndexingFeatures::default()
-      .shader_input_attachment_array_dynamic_indexing(true)
-      .shader_uniform_texel_buffer_array_dynamic_indexing(true)
-      .shader_storage_texel_buffer_array_dynamic_indexing(true)
-      .shader_uniform_buffer_array_non_uniform_indexing(true)
-      .shader_sampled_image_array_non_uniform_indexing(true)
-      .shader_storage_buffer_array_non_uniform_indexing(true)
-      .shader_storage_image_array_non_uniform_indexing(true)
-      .shader_input_attachment_array_non_uniform_indexing(true)
-      .shader_uniform_texel_buffer_array_non_uniform_indexing(true)
-      .shader_storage_texel_buffer_array_non_uniform_indexing(true)
-      .descriptor_binding_uniform_buffer_update_after_bind(true)
-      .descriptor_binding_sampled_image_update_after_bind(true)
-      .descriptor_binding_storage_image_update_after_bind(true)
-      .descriptor_binding_storage_buffer_update_after_bind(true)
-      .descriptor_binding_uniform_texel_buffer_update_after_bind(true)
-      .descriptor_binding_storage_texel_buffer_update_after_bind(true)
-      .descriptor_binding_update_unused_while_pending(true)
-      .descriptor_binding_variable_descriptor_count(true)
-      .descriptor_binding_partially_bound(true)
-      .runtime_descriptor_array(true);
-    let mut buffer_device_address_features = vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR::default()
-      .buffer_device_address(true)
-      .buffer_device_address_capture_replay(if cfg!(debug_assertions) { true } else { false });
-    let mut shader_draw_parameters_features = vk::PhysicalDeviceShaderDrawParametersFeatures::default()
-      .shader_draw_parameters(true);
+    let mut maintenance4_features = vk::PhysicalDeviceMaintenance4Features::default();
+    let mut descriptor_indexing_features = vk::PhysicalDeviceDescriptorIndexingFeatures::default();
+    let mut buffer_device_address_features = vk::PhysicalDeviceBufferDeviceAddressFeaturesKHR::default();
+    let mut shader_draw_parameters_features = vk::PhysicalDeviceShaderDrawParametersFeatures::default();
     let mut scalar_block_layout_features =
       vk::PhysicalDeviceScalarBlockLayoutFeatures::default();
     let mut synchronization2_features =
       vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
     let mut shader_demote_to_helper_invocation_features =
-      vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures::default()
-        .shader_demote_to_helper_invocation(true);
+      vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures::default();
     let mut dynamic_rendering_features =
-      vk::PhysicalDeviceDynamicRenderingFeatures::default()
-        .dynamic_rendering(true);
+      vk::PhysicalDeviceDynamicRenderingFeatures::default();
     let mut timeline_semaphore_features =
-      vk::PhysicalDeviceTimelineSemaphoreFeatures::default()
-        .timeline_semaphore(true);
-    let mut mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT::default()
-      .mesh_shader(true)
-      .task_shader(true)
-      .multiview_mesh_shader(false)
-      .primitive_fragment_shading_rate_mesh_shader(true);
-    if cfg!(debug_assertions) && physical_device.features.pipeline_statistics_query == vk::TRUE {
-      mesh_shader_features = mesh_shader_features.mesh_shader_queries(true);
-    }
-    let mut multiview_features = vk::PhysicalDeviceMultiviewFeatures::default()
-      .multiview(false);
-    let mut primitive_fragment_shading_rate_features = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR::default()
-      .pipeline_fragment_shading_rate(false)
-      .primitive_fragment_shading_rate(false)
-      .attachment_fragment_shading_rate(false);
+      vk::PhysicalDeviceTimelineSemaphoreFeatures::default();
+    let mut mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT::default();
+    let mut multiview_features = vk::PhysicalDeviceMultiviewFeatures::default();
+    let mut primitive_fragment_shading_rate_features = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR::default();
     let mut ray_tracing_pipeline_features =
       vk::PhysicalDeviceRayTracingPipelineFeaturesKHR::default();
     let mut acceleration_structure_features =
       vk::PhysicalDeviceAccelerationStructureFeaturesKHR::default();
+    #[cfg(not(feature = "nsight"))]
+    let mut maintenance5_features = vk::PhysicalDeviceMaintenance5FeaturesKHR::default();
+    #[cfg(not(feature = "nsight"))]
+    let mut maintenance6_features = vk::PhysicalDeviceMaintenance6FeaturesKHR::default();
+    #[cfg(not(feature = "nsight"))]
+    let mut shader_float_controls2_features = vk::PhysicalDeviceShaderFloatControls2FeaturesKHR::default();
+    #[cfg(not(feature = "nsight"))]
+    let mut dynamic_rendering_local_read_features =
+      vk::PhysicalDeviceDynamicRenderingLocalReadFeaturesKHR::default();
     let mut features2 = vk::PhysicalDeviceFeatures2::default()
       .push_next(&mut maintenance4_features)
       .push_next(&mut descriptor_indexing_features)
@@ -660,19 +631,6 @@ impl HalaLogicalDevice {
       .push_next(&mut shader_demote_to_helper_invocation_features)
       .push_next(&mut timeline_semaphore_features)
       .push_next(&mut dynamic_rendering_features);
-    #[cfg(not(feature = "nsight"))]
-    let mut maintenance5_features = vk::PhysicalDeviceMaintenance5FeaturesKHR::default()
-      .maintenance5(true);
-    #[cfg(not(feature = "nsight"))]
-    let mut maintenance6_features = vk::PhysicalDeviceMaintenance6FeaturesKHR::default()
-      .maintenance6(true);
-    #[cfg(not(feature = "nsight"))]
-    let mut shader_float_controls2_features = vk::PhysicalDeviceShaderFloatControls2FeaturesKHR::default()
-      .shader_float_controls2(true);
-    #[cfg(not(feature = "nsight"))]
-    let mut dynamic_rendering_local_read_features =
-      vk::PhysicalDeviceDynamicRenderingLocalReadFeaturesKHR::default()
-        .dynamic_rendering_local_read(true);
     #[cfg(not(feature = "nsight"))]
     {
       // These features will cause nSight stop working.
@@ -696,8 +654,14 @@ impl HalaLogicalDevice {
     }
     unsafe {
       instance.raw.get_physical_device_features2(physical_device.raw, &mut features2);
+    };
+
+    let mut subgroup_properties = vk::PhysicalDeviceSubgroupProperties::default();
+    let mut properties2 = vk::PhysicalDeviceProperties2::default()
+      .push_next(&mut subgroup_properties);
+    unsafe {
+      instance.raw.get_physical_device_properties2(physical_device.raw, &mut properties2);
     }
-    log::debug!("Features2: {:?}", features2);
 
     let device_create_infos = vk::DeviceCreateInfo::default()
       .queue_create_infos(&queue_infos)
@@ -707,6 +671,41 @@ impl HalaLogicalDevice {
       instance.raw.create_device(physical_device.raw, &device_create_infos, None)
         .map_err(|err| HalaGfxError::new("Failed to create logical device.", Some(Box::new(err))))?
     };
+
+    log::debug!("Features2: {:?}", features2);
+    log::debug!("Maintenance4 features: {:?}", maintenance4_features);
+    log::debug!("Descriptor indexing features: {:?}", descriptor_indexing_features);
+    log::debug!("Buffer device address features: {:?}", buffer_device_address_features);
+    log::debug!("Shader draw parameters features: {:?}", shader_draw_parameters_features);
+    log::debug!("Scalar block layout features: {:?}", scalar_block_layout_features);
+    log::debug!("Synchronization2 features: {:?}", synchronization2_features);
+    log::debug!("Shader demote to helper invocation features: {:?}", shader_demote_to_helper_invocation_features);
+    log::debug!("Timeline semaphore features: {:?}", timeline_semaphore_features);
+    log::debug!("Dynamic rendering features: {:?}", dynamic_rendering_features);
+    #[cfg(not(feature = "nsight"))]
+    {
+      log::debug!("Maintenance5 features: {:?}", maintenance5_features);
+      log::debug!("Maintenance6 features: {:?}", maintenance6_features);
+      log::debug!("Shader float controls2 features: {:?}", shader_float_controls2_features);
+      log::debug!("Dynamic rendering local read features: {:?}", dynamic_rendering_local_read_features);
+    }
+    if gpu_req.require_mesh_shader {
+      log::debug!("Mesh shader features: {:?}", mesh_shader_features);
+      log::debug!("Multiview features: {:?}", multiview_features);
+      log::debug!("Primitive fragment shading rate features: {:?}", primitive_fragment_shading_rate_features);
+    }
+    if gpu_req.require_ray_tracing {
+      log::debug!("Ray tracing pipeline features: {:?}", ray_tracing_pipeline_features);
+      log::debug!("Acceleration structure features: {:?}", acceleration_structure_features);
+    }
+
+    log::debug!("Properties2: {:?}", properties2);
+    log::debug!("Subgroup properties: {:?}", subgroup_properties);
+
+    // TODO: Check if the features are supported.
+
+    // TODO: Check if the properties are supported.
+
     Ok(logical_device)
   }
 
