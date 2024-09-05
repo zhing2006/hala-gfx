@@ -108,7 +108,7 @@ impl HalaLogicalDevice {
       graphics_queue_family_index, transfer_queue_family_index, compute_queue_family_index);
 
     // Create logical device.
-    let logical_device = Self::create_logical_device(
+    let device = Self::create_logical_device(
       gpu_req,
       instance,
       physical_device,
@@ -137,7 +137,7 @@ impl HalaLogicalDevice {
       acceleration_structure,
       deferred_host_operations,
       ray_tracing_pipeline,
-    ) = Self::get_ray_tracing_info(instance, &logical_device);
+    ) = Self::get_ray_tracing_info(instance, &device);
 
     let (
       acceleration_structure_properties,
@@ -148,7 +148,7 @@ impl HalaLogicalDevice {
 
     let gpu_allocator = Self::create_gpu_allocator(
       instance,
-      &logical_device,
+      &device,
       physical_device,
       gpu_allocator::AllocationSizes::default(),
     )?;
@@ -156,13 +156,13 @@ impl HalaLogicalDevice {
     log::debug!("A HalaLogicalDevice is created.");
     Ok(
       Self {
-        raw: logical_device.clone(),
+        raw: device.clone(),
         debug_utils_loader: if cfg!(debug_assertions) {
-          Some(ash::ext::debug_utils::Device::new(&instance.raw, &logical_device))
+          Some(ash::ext::debug_utils::Device::new(&instance.raw, &device))
         } else {
           None
         },
-        mesh_shader_loader: ash::ext::mesh_shader::Device::new(&instance.raw, &logical_device),
+        mesh_shader_loader: ash::ext::mesh_shader::Device::new(&instance.raw, &device),
         graphics_queue_family_index,
         transfer_queue_family_index,
         compute_queue_family_index,
@@ -720,7 +720,7 @@ impl HalaLogicalDevice {
   /// return: The ray tracing information.
   fn get_ray_tracing_info(
     instance: &crate::HalaInstance,
-    logical_device: &ash::Device,
+    device: &ash::Device,
   ) -> (
     ash::khr::acceleration_structure::Device,
     ash::khr::deferred_host_operations::Device,
@@ -728,15 +728,15 @@ impl HalaLogicalDevice {
   ) {
     let acceleration_structure = ash::khr::acceleration_structure::Device::new(
       &instance.raw,
-      logical_device,
+      device,
     );
     let deferred_host_operations = ash::khr::deferred_host_operations::Device::new(
       &instance.raw,
-      logical_device,
+      device,
     );
     let ray_tracing_pipeline = ash::khr::ray_tracing_pipeline::Device::new(
       &instance.raw,
-      logical_device,
+      device,
     );
 
     (
@@ -838,14 +838,14 @@ impl HalaLogicalDevice {
   /// return: The GPU allocator.
   fn create_gpu_allocator(
     instance: &crate::HalaInstance,
-    logical_device: &ash::Device,
+    device: &ash::Device,
     physical_device: &crate::HalaPhysicalDevice,
     allocation_sizes: gpu_allocator::AllocationSizes,
   ) -> Result<gpu_allocator::vulkan::Allocator, HalaGfxError> {
     let gpu_allocator = gpu_allocator::vulkan::Allocator::new(
       &gpu_allocator::vulkan::AllocatorCreateDesc {
         instance: instance.raw.clone(),
-        device: logical_device.clone(),
+        device: device.clone(),
         physical_device: physical_device.raw,
         debug_settings: if cfg!(debug_assertions) {
           gpu_allocator::AllocatorDebugSettings {
