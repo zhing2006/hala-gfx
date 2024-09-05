@@ -39,26 +39,31 @@ impl std::convert::From<HalaMemoryLocation> for gpu_allocator::MemoryLocation {
 /// The logical device.
 pub struct HalaLogicalDevice {
   pub raw: ash::Device,
-  pub debug_utils_loader: Option<ash::ext::debug_utils::Device>,
-  pub mesh_shader_loader: ash::ext::mesh_shader::Device,
+
   pub graphics_queue_family_index: u32,
   pub transfer_queue_family_index: u32,
   pub compute_queue_family_index: u32,
 
   pub gpu_allocator: std::mem::ManuallyDrop<gpu_allocator::vulkan::Allocator>,
 
+  pub debug_utils_loader: Option<ash::ext::debug_utils::Device>,
+  pub mesh_shader_loader: ash::ext::mesh_shader::Device,
   pub acceleration_structure_loader: ash::khr::acceleration_structure::Device,
   pub deferred_host_operations_loader: ash::khr::deferred_host_operations::Device,
   pub ray_tracing_pipeline_loader: ash::khr::ray_tracing_pipeline::Device,
+
   pub min_acceleration_structure_scratch_offset_alignment: u32,
   pub max_ray_recursion_depth: u32,
+
   pub shader_group_handle_size: u32,
   pub shader_group_handle_alignment: u32,
   pub shader_group_base_alignment: u32,
+
   pub framebuffer_color_sample_counts: vk::SampleCountFlags,
   pub framebuffer_depth_sample_counts: vk::SampleCountFlags,
   pub framebuffer_stencil_sample_counts: vk::SampleCountFlags,
   pub framebuffer_no_attachments_sample_counts: vk::SampleCountFlags,
+
   pub supported_depth_resolve_modes: vk::ResolveModeFlags,
 }
 
