@@ -61,10 +61,7 @@ pub use crate::pipeline::{
   HalaComputePipeline,
 };
 pub use crate::pipeline_cache::HalaPipelineCache;
-pub use crate::pools::{
-  HalaCommandPools,
-  HalaDescriptorPool,
-};
+pub use crate::command_pools::HalaCommandPools;
 pub use crate::command_buffer::{
   HalaIndirectDrawCommand,
   HalaIndirectIndexedDrawCommand,
@@ -85,6 +82,7 @@ pub use crate::buffer::{
   HalaBufferUsageFlags,
   HalaBuffer,
 };
+pub use crate::descriptor_pool::HalaDescriptorPool;
 pub use crate::descriptor_set::{
   HalaDescriptorType,
   HalaDescriptorBindingFlags,
