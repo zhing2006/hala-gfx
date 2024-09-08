@@ -27,8 +27,8 @@ pub struct HalaContext {
   pub physical_device: HalaPhysicalDevice,
   pub surface: std::mem::ManuallyDrop<HalaSurface>,
   pub swapchain: std::mem::ManuallyDrop<HalaSwapchain>,
-  pub pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
-  pub short_time_pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
+  pub command_pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
+  pub short_time_command_pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
   pub logical_device: std::mem::ManuallyDrop<Rc<RefCell<HalaLogicalDevice>>>,
   pub timestamp_query_pool: std::mem::ManuallyDrop<HalaQueryPool>,
 
@@ -40,8 +40,8 @@ impl Drop for HalaContext {
   fn drop(&mut self) {
     unsafe {
       std::mem::ManuallyDrop::drop(&mut self.timestamp_query_pool);
-      std::mem::ManuallyDrop::drop(&mut self.short_time_pools);
-      std::mem::ManuallyDrop::drop(&mut self.pools);
+      std::mem::ManuallyDrop::drop(&mut self.short_time_command_pools);
+      std::mem::ManuallyDrop::drop(&mut self.command_pools);
       std::mem::ManuallyDrop::drop(&mut self.swapchain);
       std::mem::ManuallyDrop::drop(&mut self.surface);
       std::mem::ManuallyDrop::drop(&mut self.logical_device);
@@ -126,8 +126,8 @@ impl HalaContext {
         surface: std::mem::ManuallyDrop::new(surface),
         swapchain: std::mem::ManuallyDrop::new(swapchain),
         logical_device: std::mem::ManuallyDrop::new(logical_device),
-        pools: std::mem::ManuallyDrop::new(pools),
-        short_time_pools: std::mem::ManuallyDrop::new(short_time_pools),
+        command_pools: std::mem::ManuallyDrop::new(pools),
+        short_time_command_pools: std::mem::ManuallyDrop::new(short_time_pools),
         timestamp_query_pool: std::mem::ManuallyDrop::new(timestamp_query_pool),
         multisample_count: HalaSampleCountFlags::TYPE_1,
       }
