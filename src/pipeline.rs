@@ -1912,10 +1912,10 @@ impl HalaGraphicsPipeline {
   {
     Self::create_pipeline_with_format_and_size(
       logical_device,
-      &[swapchain.desc.format],
+      &[swapchain.format],
       Some(swapchain.depth_stencil_format),
-      swapchain.desc.dims.width,
-      swapchain.desc.dims.height,
+      swapchain.dims.width,
+      swapchain.dims.height,
       flags,
       vertex_attribute_descriptions,
       vertex_binding_descriptions,

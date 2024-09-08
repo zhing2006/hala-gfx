@@ -9,15 +9,6 @@ use crate::{
   HalaFormat,
 };
 
-/// The swapchain description.
-#[derive(Default, Clone, Copy)]
-pub struct HalaSwapchainDesc {
-  pub format: HalaFormat,
-  pub color_space: vk::ColorSpaceKHR,
-  pub dims: vk::Extent2D,
-  pub present_mode: vk::PresentModeKHR,
-}
-
 /// The swapchain.
 pub struct HalaSwapchain {
   pub(crate) logical_device: Rc<RefCell<crate::HalaLogicalDevice>>,
@@ -25,7 +16,10 @@ pub struct HalaSwapchain {
   pub swapchain: vk::SwapchainKHR,
   pub images: Vec<vk::Image>,
   pub image_views: Vec<vk::ImageView>,
-  pub desc: HalaSwapchainDesc,
+  pub format: HalaFormat,
+  pub color_space: vk::ColorSpaceKHR,
+  pub dims: vk::Extent2D,
+  pub present_mode: vk::PresentModeKHR,
   pub depth_stencil_format: HalaFormat,
   pub depth_stencil_image: vk::Image,
   pub depth_stencil_image_view: vk::ImageView,
@@ -89,7 +83,10 @@ impl HalaSwapchain {
       swapchain,
       images,
       image_views,
-      desc
+      format,
+      color_space,
+      dims,
+      present_mode,
     ) = Self::create_swapchain(
       gpu_req,
       physical_device,
@@ -108,7 +105,7 @@ impl HalaSwapchain {
       instance,
       physical_device,
       &ld,
-      desc.dims,
+      dims,
     )?;
     let num_of_images = images.len();
 
@@ -127,7 +124,10 @@ impl HalaSwapchain {
         swapchain,
         images,
         image_views,
-        desc,
+        format,
+        color_space,
+        dims,
+        present_mode,
         depth_stencil_format,
         depth_stencil_image,
         depth_stencil_image_view,
@@ -248,8 +248,15 @@ impl HalaSwapchain {
     logical_device: &crate::HalaLogicalDevice,
     surface: &crate::HalaSurface,
     swapchain_loader: &ash::khr::swapchain::Device,
-  ) -> Result<(vk::SwapchainKHR, Vec<vk::Image>, Vec<vk::ImageView>, HalaSwapchainDesc), HalaGfxError>
-  {
+  ) -> Result<(
+    vk::SwapchainKHR,
+    Vec<vk::Image>,
+    Vec<vk::ImageView>,
+    HalaFormat,
+    vk::ColorSpaceKHR,
+    vk::Extent2D,
+    vk::PresentModeKHR,
+  ), HalaGfxError> {
     let surface_capabilities = unsafe {
       surface.surface_loader.get_physical_device_surface_capabilities(physical_device.raw, surface.raw)
         .map_err(|err| HalaGfxError::new("Failed to get physical device surface capabilities.", Some(Box::new(err))))?
@@ -415,12 +422,10 @@ impl HalaSwapchain {
       swapchain,
       swapchain_images,
       swapchain_imageviews,
-      HalaSwapchainDesc {
-        format: format.into(),
-        color_space: vk::ColorSpaceKHR::SRGB_NONLINEAR,
-        dims: extent,
-        present_mode,
-      }
+      format.into(),
+      vk::ColorSpaceKHR::SRGB_NONLINEAR,
+      extent,
+      present_mode,
     ))
   }
 
