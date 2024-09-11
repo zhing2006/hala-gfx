@@ -25,8 +25,8 @@ pub struct HalaContext {
   pub gpu_req: HalaGPURequirements,
 
   pub timestamp_query_pool: HalaQueryPool,
-  pub short_time_pools: Rc<RefCell<HalaCommandPools>>,
-  pub pools: Rc<RefCell<HalaCommandPools>>,
+  pub short_time_command_pools: Rc<RefCell<HalaCommandPools>>,
+  pub command_pools: Rc<RefCell<HalaCommandPools>>,
   pub swapchain: std::mem::ManuallyDrop<HalaSwapchain>,
   pub surface: HalaSurface,
   pub logical_device: Rc<RefCell<HalaLogicalDevice>>,
@@ -84,7 +84,7 @@ impl HalaContext {
       Rc::clone(&logical_device),
       &surface)?;
 
-    let pools = Rc::new(
+    let command_pools = Rc::new(
       RefCell::new(
         crate::HalaCommandPools::new(
           Rc::clone(&logical_device),
@@ -93,7 +93,7 @@ impl HalaContext {
         )?
       )
     );
-    let short_time_pools = Rc::new(
+    let short_time_command_pools = Rc::new(
       RefCell::new(
         crate::HalaCommandPools::new(
           Rc::clone(&logical_device),
@@ -121,8 +121,8 @@ impl HalaContext {
         surface,
         swapchain: std::mem::ManuallyDrop::new(swapchain),
         logical_device,
-        pools,
-        short_time_pools,
+        command_pools,
+        short_time_command_pools,
         timestamp_query_pool,
         multisample_count: HalaSampleCountFlags::TYPE_1,
       }
