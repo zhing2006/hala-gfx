@@ -23,14 +23,15 @@ use crate::{
 pub struct HalaContext {
   pub name: String,
   pub gpu_req: HalaGPURequirements,
-  pub instance: std::mem::ManuallyDrop<HalaInstance>,
-  pub physical_device: HalaPhysicalDevice,
-  pub surface: std::mem::ManuallyDrop<HalaSurface>,
+
+  pub timestamp_query_pool: HalaQueryPool,
+  pub short_time_pools: Rc<RefCell<HalaCommandPools>>,
+  pub pools: Rc<RefCell<HalaCommandPools>>,
   pub swapchain: std::mem::ManuallyDrop<HalaSwapchain>,
-  pub pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
-  pub short_time_pools: std::mem::ManuallyDrop<Rc<RefCell<HalaCommandPools>>>,
-  pub logical_device: std::mem::ManuallyDrop<Rc<RefCell<HalaLogicalDevice>>>,
-  pub timestamp_query_pool: std::mem::ManuallyDrop<HalaQueryPool>,
+  pub surface: HalaSurface,
+  pub logical_device: Rc<RefCell<HalaLogicalDevice>>,
+  pub physical_device: HalaPhysicalDevice,
+  pub instance: HalaInstance,
 
   pub multisample_count: HalaSampleCountFlags,
 }
@@ -39,13 +40,7 @@ pub struct HalaContext {
 impl Drop for HalaContext {
   fn drop(&mut self) {
     unsafe {
-      std::mem::ManuallyDrop::drop(&mut self.timestamp_query_pool);
-      std::mem::ManuallyDrop::drop(&mut self.short_time_pools);
-      std::mem::ManuallyDrop::drop(&mut self.pools);
       std::mem::ManuallyDrop::drop(&mut self.swapchain);
-      std::mem::ManuallyDrop::drop(&mut self.surface);
-      std::mem::ManuallyDrop::drop(&mut self.logical_device);
-      std::mem::ManuallyDrop::drop(&mut self.instance);
     }
     log::debug!("A HalaContext is dropped.");
   }
@@ -121,14 +116,14 @@ impl HalaContext {
       Self {
         name: name.to_string(),
         gpu_req: gpu_req.clone(),
-        instance: std::mem::ManuallyDrop::new(instance),
+        instance,
         physical_device,
-        surface: std::mem::ManuallyDrop::new(surface),
+        surface,
         swapchain: std::mem::ManuallyDrop::new(swapchain),
-        logical_device: std::mem::ManuallyDrop::new(logical_device),
-        pools: std::mem::ManuallyDrop::new(pools),
-        short_time_pools: std::mem::ManuallyDrop::new(short_time_pools),
-        timestamp_query_pool: std::mem::ManuallyDrop::new(timestamp_query_pool),
+        logical_device,
+        pools,
+        short_time_pools,
+        timestamp_query_pool,
         multisample_count: HalaSampleCountFlags::TYPE_1,
       }
     )

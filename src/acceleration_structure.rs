@@ -495,7 +495,7 @@ impl std::convert::From<&HalaAccelerationStructureBuildRangeInfo> for vk::Accele
 pub struct HalaAccelerationStructure {
   pub(crate) logical_device: Rc<RefCell<HalaLogicalDevice>>,
   pub raw: vk::AccelerationStructureKHR,
-  pub buffer: std::mem::ManuallyDrop<HalaBuffer>,
+  pub buffer: HalaBuffer,
   pub address: u64,
   pub(crate) debug_name: String,
 }
@@ -514,7 +514,6 @@ impl Drop for HalaAccelerationStructure {
       self.logical_device.borrow()
         .acceleration_structure_loader
         .destroy_acceleration_structure(self.raw, None);
-      std::mem::ManuallyDrop::drop(&mut self.buffer);
     }
     log::debug!("A HalaAccelerationStructure \"{}\" is dropped.", self.debug_name);
   }
@@ -633,7 +632,7 @@ impl HalaAccelerationStructure {
     Ok(Self {
       logical_device: logical_device.clone(),
       raw: acceleration_structure,
-      buffer: std::mem::ManuallyDrop::new(buffer),
+      buffer,
       address,
       debug_name: debug_name.to_string(),
     })

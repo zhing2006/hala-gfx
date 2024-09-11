@@ -44,8 +44,6 @@ pub struct HalaLogicalDevice {
   pub transfer_queue_family_index: u32,
   pub compute_queue_family_index: u32,
 
-  pub gpu_allocator: std::mem::ManuallyDrop<gpu_allocator::vulkan::Allocator>,
-
   pub debug_utils_loader: Option<ash::ext::debug_utils::Device>,
   pub mesh_shader_loader: ash::ext::mesh_shader::Device,
   pub acceleration_structure_loader: ash::khr::acceleration_structure::Device,
@@ -65,13 +63,14 @@ pub struct HalaLogicalDevice {
   pub framebuffer_no_attachments_sample_counts: vk::SampleCountFlags,
 
   pub supported_depth_resolve_modes: vk::ResolveModeFlags,
+
+  pub gpu_allocator: gpu_allocator::vulkan::Allocator,
 }
 
 /// The Drop trait implementation of the logical device.
 impl Drop for HalaLogicalDevice {
   fn drop(&mut self) {
     unsafe {
-      std::mem::ManuallyDrop::drop(&mut self.gpu_allocator);
       self.raw.destroy_device(None);
     }
     log::debug!("A HalaLogicalDevice is dropped.");
@@ -166,7 +165,7 @@ impl HalaLogicalDevice {
         graphics_queue_family_index,
         transfer_queue_family_index,
         compute_queue_family_index,
-        gpu_allocator: std::mem::ManuallyDrop::new(gpu_allocator),
+        gpu_allocator,
         acceleration_structure_loader: acceleration_structure,
         deferred_host_operations_loader: deferred_host_operations,
         ray_tracing_pipeline_loader: ray_tracing_pipeline,

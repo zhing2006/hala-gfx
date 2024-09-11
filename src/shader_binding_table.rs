@@ -13,11 +13,11 @@ use crate::{
 
 /// The shader binding table.
 pub struct HalaShaderBindingTable {
-  pub buffer: std::mem::ManuallyDrop<HalaBuffer>,
   pub raygen_region: vk::StridedDeviceAddressRegionKHR,
   pub miss_region: vk::StridedDeviceAddressRegionKHR,
   pub hit_region: vk::StridedDeviceAddressRegionKHR,
   pub callable_region: vk::StridedDeviceAddressRegionKHR,
+  pub buffer: HalaBuffer,
 }
 
 /// The AsRef implementation for shader binding table.
@@ -30,9 +30,6 @@ impl AsRef<HalaShaderBindingTable> for HalaShaderBindingTable {
 /// The Drop implementation for shader binding table.
 impl Drop for HalaShaderBindingTable {
   fn drop(&mut self) {
-    unsafe {
-      std::mem::ManuallyDrop::drop(&mut self.buffer);
-    }
     log::debug!("The HalaShaderBindingTable is dropped.");
   }
 }
@@ -170,7 +167,7 @@ impl HalaShaderBindingTable {
 
     log::debug!("The HalaShaderBindingTable is created.");
     Ok(Self {
-      buffer: std::mem::ManuallyDrop::new(buffer),
+      buffer,
       raygen_region,
       miss_region,
       hit_region,
